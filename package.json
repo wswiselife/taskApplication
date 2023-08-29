@@ -6,6 +6,7 @@
     "scripts": {
         "dev": "vite --mode development",
         "pro": "vite --mode production",
+        "lint": "eslint --ext .js,.vue src",
         "build": "vite build",
         "preview": "vite preview"
     },
@@ -14,9 +15,14 @@
         "vue": "^3.3.4"
     },
     "devDependencies": {
+        "@babel/core": "^7.22.11",
+        "@babel/eslint-parser": "^7.22.11",
         "@types/node": "^20.5.7",
         "@vitejs/plugin-vue": "^4.2.3",
+        "eslint": "^8.48.0",
+        "eslint-plugin-vue": "^9.17.0",
         "sass": "^1.66.1",
-        "vite": "^4.4.5"
+        "vite": "^4.4.5",
+        "vite-plugin-eslint": "^1.8.1"
     }
 }
