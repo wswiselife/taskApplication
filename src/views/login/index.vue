@@ -10,19 +10,6 @@
 
 <template>
     <h3>登录页面</h3>
-    <template #header>
-        <TableHeader
-            :can-collapsed="
-                likeSearchModel.conditionItems &&
-                likeSearchModel.conditionItems.length !== 0
-            "
-            :search-model="likeSearchModel.conditionItems"
-            :default-collapsed-state="true"
-            title="表格查询"
-            @doSearch="doSearch"
-            @resetSearch="resetSearchs"
-        />
-    </template>
 </template>
 
 <style scoped></style>
