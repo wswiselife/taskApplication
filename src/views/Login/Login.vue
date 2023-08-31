@@ -2,19 +2,35 @@
  * @Author: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
  * @Date: 2023-08-29 17:01:46
  * @LastEditors: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
- * @LastEditTime: 2023-08-30 17:03:12
+ * @LastEditTime: 2023-08-31 16:51:37
+ * @FilePath: \taskApplication\src\views\Login\Login.vue
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+-->
+<!--
+ * @Author: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
+ * @Date: 2023-08-29 17:01:46
+ * @LastEditors: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
+ * @LastEditTime: 2023-08-31 10:32:08
  * @FilePath: \taskApplication\src\views\login\index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
 <script setup>
-import { reactive } from 'vue';
+import { reactive, ref } from 'vue';
 import axios from 'axios';
+import { useRouter } from 'vue-router';
 
+/********************************\ 
+ * 公共引入处理
+\********************************/
+const router = useRouter();
+
+/********************************\ 
+ * 登录部分
+\********************************/
 const form = reactive({
-    account: '',
-    password: '',
+    account: 'admin',
+    password: '123456',
 });
-
 async function loginbtn() {
     try {
         const response = await axios.post(
@@ -24,11 +40,15 @@ async function loginbtn() {
                 password: form.password,
             },
         );
-
-        if (response.data) {
-            // 登录成功，进行相应操作
-            console.log('登录成功');
-            console.log('response.data ↓↓', response.data)
+        if (response.data.code === 200) {
+            // 存储 token 和 authorityList 到 localStorage
+            localStorage.setItem('token', response.data.result.token);
+            localStorage.setItem(
+                'authorityList',
+                JSON.stringify(response.data.result.authorityList),
+            );
+            console.log('response.data ==', response.data);
+            router.push({ path: '/layout' });
         } else {
             // 登录失败，进行相应操作
             console.log('登录失败');
@@ -37,6 +57,15 @@ async function loginbtn() {
         // 请求失败或其他错误，进行相应操作
         console.log('请求失败', error);
     }
+}
+
+/********************************\ 
+ * 密码眼睛处理
+\********************************/
+const passwordType = ref('password');
+function showPwd() {
+    passwordType.value =
+        passwordType.value === 'password' ? 'text' : 'password';
 }
 </script>
 
@@ -47,7 +76,12 @@ async function loginbtn() {
                 <h3 class="title">Login Form</h3>
             </div>
             <el-form-item class="account">
-                <el-input v-model="form.account" class="form_input">
+                <el-input
+                    v-model="form.account"
+                    class="form_input"
+                    type="text"
+                    placeholder="account"
+                >
                     <!-- 左侧小icon -->
                     <template #prefix>
                         <span class="svg_container">
@@ -58,7 +92,12 @@ async function loginbtn() {
                 </el-input>
             </el-form-item>
             <el-form-item class="password">
-                <el-input v-model="form.password" class="form_input">
+                <el-input
+                    v-model="form.password"
+                    class="form_input"
+                    :type="passwordType"
+                    placeholder="password"
+                >
                     <!-- 左侧小icon -->
                     <template #prefix>
                         <span class="svg_container">
@@ -75,7 +114,7 @@ async function loginbtn() {
                 </el-input>
             </el-form-item>
 
-            <el-button @click="loginbtn" class="login_btn">登录</el-button>
+            <el-button @click="loginbtn" class="login_btn">Login</el-button>
         </el-form>
     </div>
 </template>
@@ -105,7 +144,6 @@ $bg: #283443;
 .el-button:hover {
     color: #000;
 }
-
 </style>
 
 <style scoped lang="scss">
@@ -140,7 +178,6 @@ $light_gray: #eee;
         }
     }
 
-
     .svg_container {
         display: inline-block;
         vertical-align: middle;
@@ -163,6 +200,7 @@ $light_gray: #eee;
         height: 16px;
         margin-left: 8px; // 注意这里是 margin-left
         line-height: 16px;
+        cursor: pointer;
 
         img {
             width: 16px;
