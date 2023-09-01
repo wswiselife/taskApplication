@@ -1,17 +1,41 @@
+<!--
+ * @Author: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
+ * @Date: 2023-08-31 10:49:42
+ * @LastEditors: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
+ * @LastEditTime: 2023-09-01 14:02:56
+ * @FilePath: \taskApplication\src\layout\NavBar\NavBar.vue
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+-->
 <script setup>
 import { useRouter } from 'vue-router';
 
-/********************************\ 
+import { userLogout } from '@/api/modules/user';
+
+/********************************\
  * 公共引入处理
 \********************************/
 const router = useRouter();
 
-/********************************\ 
+/********************************\
  * 返回上一步处理
 \********************************/
-function logoutbtn() {
-    console.log('返回上一步');
-    router.back();
+async function logoutbtn() {
+    try {
+        const response = await userLogout();
+        console.log('退出登录 response ===', response);
+        if (response.code === 200) {
+            // 清除本地缓存
+            localStorage.removeItem('token');
+            localStorage.removeItem('authorityList');
+            router.push('/login');
+        } else {
+            // 注销失败，打印错误信息
+            console.error('注销失败:', response.message);
+        }
+    } catch (error) {
+        // 捕获任何错误并打印
+        console.error('发生错误:', error);
+    }
 }
 </script>
 
@@ -26,12 +50,11 @@ function logoutbtn() {
             </div>
             <!-- 创建按钮 -->
             <el-button>创建</el-button>
-            <el-button @click="logoutbtn">上一步</el-button>
         </div>
 
         <div class="navbar_right">
             <!-- 退出登录 -->
-            <el-button class="logout">退出登录</el-button>
+            <el-button class="logout" @click="logoutbtn">退出登录</el-button>
 
             <!-- 头像 -->
             <div class="avatar">

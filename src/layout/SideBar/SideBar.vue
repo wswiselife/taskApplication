@@ -2,7 +2,7 @@
  * @Author: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
  * @Date: 2023-08-31 10:50:36
  * @LastEditors: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
- * @LastEditTime: 2023-08-31 16:46:35
+ * @LastEditTime: 2023-09-01 11:40:29
  * @FilePath: \taskApplication\src\layout\SideBar\SideBar.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE.
 -->
@@ -28,7 +28,7 @@ onMounted(() => {
 });
 
 /********************************\ 
- * 前往待审批（普通用户）
+ * 申请人申请任务
 \********************************/
 function pendingtaskClick() {
     router.push({
@@ -36,7 +36,7 @@ function pendingtaskClick() {
     });
 }
 /********************************\ 
- * 前往给普通用户审批
+ * 审批人审批任务
 \********************************/
 function adminpendingtask() {
     router.push({
@@ -63,7 +63,7 @@ function adminpendingtask() {
             <el-menu-item
                 index="2"
                 @click="adminpendingtask"
-                v-if="authorityList.includes('WEB_TaskApprover')"
+                v-if="authorityList.includes('WEB_TaskApplyAudit')"
             >
                 <el-icon><location /></el-icon>
                 <span>待审批任务</span>

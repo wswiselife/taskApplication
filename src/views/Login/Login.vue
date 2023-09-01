@@ -2,7 +2,7 @@
  * @Author: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
  * @Date: 2023-08-29 17:01:46
  * @LastEditors: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
- * @LastEditTime: 2023-08-31 16:51:37
+ * @LastEditTime: 2023-09-01 16:21:38
  * @FilePath: \taskApplication\src\views\Login\Login.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -16,38 +16,35 @@
 -->
 <script setup>
 import { reactive, ref } from 'vue';
-import axios from 'axios';
 import { useRouter } from 'vue-router';
+import { useUserLoginStore } from '../../store/modules/user';
 
-/********************************\ 
+/********************************\
  * 公共引入处理
 \********************************/
 const router = useRouter();
+const userLoginStore = useUserLoginStore();
 
-/********************************\ 
+/********************************\
  * 登录部分
 \********************************/
+
 const form = reactive({
     account: 'admin',
     password: '123456',
 });
 async function loginbtn() {
     try {
-        const response = await axios.post(
-            'http://192.168.1.83:5225/jsy/Auth/Login',
-            {
-                account: form.account,
-                password: form.password,
-            },
-        );
-        if (response.data.code === 200) {
+        // 发送登录请求
+        const response = await userLoginStore.fetchUserLoginAction(form);
+        console.log('登录 response ===', response);
+        if (response.code === 200) {
             // 存储 token 和 authorityList 到 localStorage
-            localStorage.setItem('token', response.data.result.token);
+            localStorage.setItem('token', response.result.token);
             localStorage.setItem(
                 'authorityList',
-                JSON.stringify(response.data.result.authorityList),
+                JSON.stringify(response.result.authorityList),
             );
-            console.log('response.data ==', response.data);
             router.push({ path: '/layout' });
         } else {
             // 登录失败，进行相应操作
@@ -56,10 +53,14 @@ async function loginbtn() {
     } catch (error) {
         // 请求失败或其他错误，进行相应操作
         console.log('请求失败', error);
+
+        if (error.response) {
+            console.log('服务器返回错误', error.response);
+        }
     }
 }
 
-/********************************\ 
+/********************************\
  * 密码眼睛处理
 \********************************/
 const passwordType = ref('password');

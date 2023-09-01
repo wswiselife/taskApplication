@@ -1,0 +1,57 @@
+/*
+ * @Author: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
+ * @Date: 2023-09-01 09:58:27
+ * @LastEditors: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
+ * @LastEditTime: 2023-09-01 13:48:56
+ * @FilePath: \taskApplication\src\api\index.js
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ */
+import axios from 'axios';
+
+// 开发环境配置
+// const processENV = () => {
+//     if (import.meta.env.VITE_API_URL === 'development') {
+//         return process.env.VITE_API_URL;
+//     }
+// };
+
+const request = axios.create({
+    baseURL: import.meta.env.VITE_API_URL,
+    timeout: 4000,
+});
+
+// 请求拦截器
+request.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers['Authorization'] = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    },
+);
+
+// 响应拦截器
+request.interceptors.response.use(
+    (response) => {
+        console.log('axios 拦截器 response.data ===', response.data);
+        if (response.status === 200) {
+            return response.data;
+        } else {
+            return Promise.reject(new Error('Error: ' + response.status));
+        }
+    },
+    (error) => {
+        // 为什么拦截401？
+        if (error.response && error.response.status === 401) {
+            // 重新登录逻辑
+            alert('你尚未登录');
+        }
+        return Promise.reject(error);
+    },
+);
+
+export { request };
