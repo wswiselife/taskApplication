@@ -2,14 +2,23 @@
  * @Author: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
  * @Date: 2023-08-31 10:49:42
  * @LastEditors: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
- * @LastEditTime: 2023-09-01 14:02:56
+ * @LastEditTime: 2023-09-04 16:32:27
+ * @FilePath: \taskApplication\src\layout\NavBar\NavBar.vue
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+-->
+<!--
+ * @Author: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
+ * @Date: 2023-08-31 10:49:42
+ * @LastEditors: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
+ * @LastEditTime: 2023-09-01 17:07:45
  * @FilePath: \taskApplication\src\layout\NavBar\NavBar.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
 <script setup>
 import { useRouter } from 'vue-router';
-
 import { userLogout } from '@/api/modules/user';
+
+import Create from './Create/Create.vue';
 
 /********************************\
  * 公共引入处理
@@ -17,12 +26,12 @@ import { userLogout } from '@/api/modules/user';
 const router = useRouter();
 
 /********************************\
- * 返回上一步处理
+ * 退出登录
 \********************************/
 async function logoutbtn() {
     try {
         const response = await userLogout();
-        console.log('退出登录 response ===', response);
+        // console.log('退出登录 response ===', response);
         if (response.code === 200) {
             // 清除本地缓存
             localStorage.removeItem('token');
@@ -49,7 +58,7 @@ async function logoutbtn() {
                 logo
             </div>
             <!-- 创建按钮 -->
-            <el-button>创建</el-button>
+            <create></create>
         </div>
 
         <div class="navbar_right">

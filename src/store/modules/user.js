@@ -21,8 +21,8 @@ export const useUserLoginStore = defineStore('userLogin', {
     actions: {
         async fetchUserLoginAction(data) {
             const result = await userLogin(data);
-            console.log('user store仓库 result ===', result);
-            return result
+            // console.log('user store仓库 result ===', result);
+            return result;
         },
     },
 });

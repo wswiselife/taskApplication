@@ -2,7 +2,7 @@
  * @Author: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
  * @Date: 2023-08-29 17:01:46
  * @LastEditors: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
- * @LastEditTime: 2023-09-01 16:21:38
+ * @LastEditTime: 2023-09-04 16:32:11
  * @FilePath: \taskApplication\src\views\Login\Login.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -37,7 +37,7 @@ async function loginbtn() {
     try {
         // 发送登录请求
         const response = await userLoginStore.fetchUserLoginAction(form);
-        console.log('登录 response ===', response);
+        // console.log('登录 response ===', response);
         if (response.code === 200) {
             // 存储 token 和 authorityList 到 localStorage
             localStorage.setItem('token', response.result.token);
