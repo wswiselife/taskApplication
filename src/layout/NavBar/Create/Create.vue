@@ -14,45 +14,51 @@ const userProjectList = useUserProjectListStore();
 const useTaskTypeList = useTaskTypeListStore();
 const useAuditTypeList = useAuditUserListStore();
 import { ElMessage } from 'element-plus';
+// 时间格式化
+import moment from 'moment';
 
 /********************************\
- * 控制弹出层、表单响应
+ * 表单数据定义
 \********************************/
-const dialogFormVisible = ref(false);
-const formLabelWidth = '120px';
-
 const form = reactive({
     taskDescription: '', // 任务描述
     projectId: null, // 项目 ID
     taskTypeId: null, // 任务类别 ID
-    planFinishHour: 1, // 计划完成小时数
-    pianFinishData: '', // 计划完成日期
+    planFinishHour: null, // 计划完成小时数
+    planFinishDate: '', // 计划完成日期
     applyAuditId: null, // 审批人ID
 });
 
 /********************************\
- * dialog 控制处理(缓存优化)
+ * 控制弹出层表单显示隐藏
 \********************************/
-// 点击的时候发送请求
+const dialogFormVisible = ref(false);
+const formLabelWidth = '120px';
+// 点击创建按钮发送请求，获取权限接口数据
 function dialogFormVisibleFun() {
+    // 打开对话框
     dialogFormVisible.value = true;
     // 调用用户权限项目接口
     getUserProjectList();
-    // 调用获取任务类型接口
+    // 调用获取权限任务类型接口
     getTaskTypeList();
-    // 调用审批人接口
+    // 调用权限审批人接口
     getAuditUserList();
 }
 /********************************\
- * 获取用户有权限的项目
+ * 获取用户有权限的项目ID
 \********************************/
 const projectList = ref([]);
 async function getUserProjectList() {
     const response = await userProjectList.fetchUserProjectListAction();
     if (response && response.code === 200) {
         projectList.value = response.result;
+    } else {
+        ElMessage({
+            message: '获取项目失败',
+            type: 'error',
+        });
     }
-    // console.log('用户有权限的项目 response ===', response);
 }
 
 /********************************\
@@ -63,8 +69,12 @@ async function getTaskTypeList() {
     const response = await useTaskTypeList.fetchTaskTypeListAction();
     if (response && response.code === 200) {
         taskTypeList.value = response.result;
+    } else {
+        ElMessage({
+            message: '获取任务类型失败',
+            type: 'error',
+        });
     }
-    // console.log('任务类型ID response ===', response);
 }
 
 /********************************\
@@ -75,30 +85,82 @@ async function getAuditUserList() {
     const response = await useAuditTypeList.fetchAuditUserListAction();
     if (response && response.code === 200) {
         auditUserList.value = response.result;
+    } else {
+        ElMessage({
+            message: '获取审批人失败',
+            type: 'error',
+        });
     }
-    // console.log('审批人ID response ===', response);
 }
 
 /********************************\
  * 完成日期格式化
 \********************************/
-
-// function formatTime () {
-
-// }
-
+function getFormattedDate(date) {
+    return moment(date).format('YYYY-MM-DD HH:mm:ss');
+}
 /********************************\
- * 创建按钮
+ * 对话框确认操作
 \********************************/
 async function createTaskBtn() {
-    // 取消弹出框
-    dialogFormVisible.value = false;
+    // 任务描述
+    if (!form.taskDescription) {
+        ElMessage({
+            message: '请填写任务描述信息',
+            type: 'error',
+        });
+        return;
+    }
+    // 项目id
+    if (!form.projectId) {
+        ElMessage({
+            message: '请选择项目',
+            type: 'error',
+        });
+        return;
+    }
+    // 任务类别
+    if (!form.taskTypeId) {
+        ElMessage({
+            message: '请选择任务类别',
+            type: 'error',
+        });
+        return;
+    }
+    // 完成小时数
+    if (!form.planFinishHour) {
+        ElMessage({
+            message: '请填写完成小时数',
+            type: 'error',
+        });
+        return;
+    }
+    // 完成日期
+    if (!form.planFinishDate) {
+        ElMessage({
+            message: '请选择完成日期',
+            type: 'error',
+        });
+        return;
+    }
+    // 审批人
+    if (!form.applyAuditId) {
+        ElMessage({
+            message: '请选择审批人',
+            type: 'error',
+        });
+        return;
+    }
+
+    // 完成日期格式化
+    form.planFinishDate = getFormattedDate(form.planFinishDate);
 
     try {
         const response = await createTask.fetchCreateTaskAction(form);
-        console.log(' Create 页面 response ===', response);
-
+        // console.log(' Create 页面 response ===', response);
         if (response && response.code === 200) {
+            // 关闭对话框
+            dialogFormVisible.value = false;
             // 提示新建完成
             ElMessage({
                 message: '新建任务成功',
@@ -107,12 +169,14 @@ async function createTaskBtn() {
         } else {
             // 可以添加其他的错误处理逻辑
             ElMessage({
-                message: '新建任务失败',
+                message: response.message,
                 type: 'error',
             });
         }
     } catch (error) {
-        console.error('Error during task creation:', error);
+        console.error('创建任务错误：', error);
+        // 取消弹出框
+        dialogFormVisible.value = false;
         ElMessage({
             message: '新建任务出错',
             type: 'error',
@@ -123,23 +187,14 @@ async function createTaskBtn() {
 
 <template>
     <div class="create_container">
-        <el-button>request</el-button>
-        <el-button @click="dialogFormVisibleFun">创建</el-button>
+        <el-button @click="dialogFormVisibleFun" class="create">创建</el-button>
 
         <!-- 弹出框 -->
         <el-dialog v-model="dialogFormVisible" title="新建任务" modal="true">
             <el-form :model="form">
-                <!-- 任务描述 -->
-                <el-form-item
-                    label="任务描述"
-                    prop="desc"
-                    :label-width="formLabelWidth"
-                >
-                    <el-input type="textarea" v-model="form.taskDescription" />
-                </el-form-item>
                 <!-- 项目ID-选择框 -->
                 <el-form-item
-                    label="项目ID"
+                    label="项目"
                     prop="projectId"
                     :label-width="formLabelWidth"
                 >
@@ -157,7 +212,7 @@ async function createTaskBtn() {
                 </el-form-item>
                 <!-- 任务类别ID-选择框 -->
                 <el-form-item
-                    label="任务类别ID"
+                    label="任务类别"
                     prop="auditUser"
                     :label-width="formLabelWidth"
                 >
@@ -173,29 +228,9 @@ async function createTaskBtn() {
                         />
                     </el-select>
                 </el-form-item>
-                <!-- 计划完成小时数 -->
-                <el-form-item
-                    label="计划完成小时数"
-                    prop="name"
-                    :label-width="formLabelWidth"
-                >
-                    <el-input v-model="form.planFinishHour" />
-                </el-form-item>
-                <!-- 计划完成日期 -->
-                <el-form-item
-                    label="计划完成日期"
-                    :label-width="formLabelWidth"
-                >
-                    <el-date-picker
-                        v-model="form.pianFinishData"
-                        type="date"
-                        placeholder="选择计划完成日期"
-                        style="width: 100%"
-                    />
-                </el-form-item>
                 <!-- 审批人ID-选择框 -->
                 <el-form-item
-                    label="审批人ID"
+                    label="审批人"
                     prop="auditUser"
                     :label-width="formLabelWidth"
                 >
@@ -211,13 +246,50 @@ async function createTaskBtn() {
                         />
                     </el-select>
                 </el-form-item>
+
+                <!-- 计划完成小时数 -->
+                <el-form-item
+                    label="计划完成小时数"
+                    prop="name"
+                    :label-width="formLabelWidth"
+                >
+                    <el-input v-model="form.planFinishHour" />
+                </el-form-item>
+                <!-- 计划完成日期 -->
+                <el-form-item
+                    label="计划完成日期"
+                    :label-width="formLabelWidth"
+                >
+                    <el-date-picker
+                        v-model="form.planFinishDate"
+                        type="date"
+                        placeholder="选择计划完成日期"
+                        style="width: 100%"
+                    />
+                </el-form-item>
+
+                <!-- 任务描述 -->
+                <el-form-item
+                    label="任务描述"
+                    prop="desc"
+                    :label-width="formLabelWidth"
+                >
+                    <el-input type="textarea" v-model="form.taskDescription" />
+                </el-form-item>
             </el-form>
             <template #footer>
                 <span class="dialog-footer">
-                    <el-button @click="dialogFormVisible = false">
+                    <el-button
+                        @click="dialogFormVisible = false"
+                        class="btn-cancel"
+                    >
                         取消
                     </el-button>
-                    <el-button type="primary" @click="createTaskBtn">
+                    <el-button
+                        type="primary"
+                        @click="createTaskBtn"
+                        class="btn-sure"
+                    >
                         确认
                     </el-button>
                 </span>
@@ -226,7 +298,8 @@ async function createTaskBtn() {
     </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
+@import '../../../assets/css/variables.scss';
 .el-button--text {
     margin-right: 15px;
 }
@@ -239,9 +312,37 @@ async function createTaskBtn() {
 .dialog-footer button:first-child {
     margin-right: 10px;
 }
+
+.el-button.btn-cancel {
+    color: $color-bfont;
+    background-color: #f0f0f0;
+    border: none;
+}
+
+.btn-sure {
+    color: $color-wfont;
+    background-color: $color-primary;
+}
+
+.btn-sure:hover {
+    color: $color-bfont;
+    background-color: $color-primary;
+}
+
+.el-button.btn-cancel:hover {
+    background-color: #ccc;
+}
 </style>
 
 <style scoped lang="scss">
+@import '../../../assets/css/variables.scss';
 .create_container {
+    .create {
+        background-color: $color-primary;
+        color: $color-wfont;
+    }
+    .create:hover {
+        color: $color-bfont;
+    }
 }
 </style>

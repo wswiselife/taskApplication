@@ -2,7 +2,7 @@
  * @Author: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
  * @Date: 2023-08-31 10:39:19
  * @LastEditors: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
- * @LastEditTime: 2023-08-31 16:13:30
+ * @LastEditTime: 2023-09-11 17:49:47
  * @FilePath: \taskApplication\src\layout\index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -15,9 +15,9 @@
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
 <script setup>
-import Navbar from './NavBar/NavBar.vue';
-import SideBar from './SideBar/SideBar.vue';
-import AppMain from './AppMain/AppMain.vue';
+import Navbar from './navBar/NavBar.vue';
+import sidebar from './sideBar/SideBar.vue';
+// import AppMain from './appMain/AppMain.vue';
 </script>
 
 <template>
@@ -30,42 +30,49 @@ import AppMain from './AppMain/AppMain.vue';
         <div class="sidebar_appmain_container">
             <!-- SideBar -->
             <div class="sidebar">
-                <SideBar></SideBar>
+                <sidebar></sidebar>
             </div>
             <!-- AppMain -->
             <div class="app_main">
-                <AppMain>
-                    <router-view></router-view>
-                </AppMain>
+                <!-- <AppMain>
+                    <component :is="currentComponent"></component>
+                </AppMain> -->
+
+                <router-view></router-view>
             </div>
         </div>
     </div>
 </template>
 
 <style scoped lang="scss">
+@import '../assets/css/variables.scss';
+
 .layout_container {
     height: 100vh;
     width: 100vw;
+    background-color: $color-four;
 
     .navbar {
         width: 100%;
         height: 50px;
-        border-bottom: 1px solid black;
-        background-color: #2d3a4b;
+        border-bottom: 1px solid $color-border;
     }
 
     .sidebar_appmain_container {
         height: calc(100vh - 50px);
-        background-color: #2d3a4b;
         display: flex;
         justify-content: flex-start;
     }
 
     .sidebar {
-        width: 250px;
-        max-width: 250px;
+        width: 220px;
+        min-width: 150px;
         height: 100%;
-        border-right: 1px solid black;
+        border-right: 1px solid $color-border;
+    }
+
+    .app_main {
+        margin: 25px auto;
     }
 }
 </style>

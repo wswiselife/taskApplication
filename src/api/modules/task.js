@@ -1,13 +1,25 @@
+/*
+ * @Author: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
+ * @Date: 2023-09-01 10:00:28
+ * @LastEditors: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
+ * @LastEditTime: 2023-09-11 13:47:25
+ * @FilePath: \taskApplication\src\api\modules\task.js
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ */
 import { request } from '../index';
 
-// 新建申请
+/********************************\
+ * 新建申请
+\********************************/
+// 新建任务
 export const createTask = (data) => {
+    console.log('data ===', data);
     return request.post('TaskApply/AddTaskApply', {
         taskDescription: data.taskDescription,
         projectId: data.projectId,
         taskTypeId: data.taskTypeId,
         planFinishHour: data.planFinishHour,
-        pianFinishData: data.pianFinishData,
+        planFinishDate: data.planFinishDate,
         applyAuditId: data.applyAuditId,
     });
 };
@@ -25,4 +37,49 @@ export const getTaskTypeList = () => {
 // 获取审批人ID
 export const getAuditUserList = () => {
     return request.get('/Employee/GetTaskApplyAuditUserList');
+};
+
+/********************************\
+ * 获取任务列表
+\********************************/
+// 获取待审批列表（申请人）
+export const getEmployeeTaskData = () => {
+    return request.get('/TaskApply/GetNewTaskApplyByEmployeeId');
+};
+
+// 获取待审批列表（审批人）
+export const getAuditTaskData = () => {
+    return request.get('/TaskApply/GetNewTaskApplyByApplyAuditId');
+};
+
+/********************************\
+ * 修改申请
+\********************************/
+
+export const getUpdateTaskData = (data) => {
+    return request.post('/TaskApply/UpdateTaskApply', data);
+};
+
+/********************************\
+ * 假删除申请
+\********************************/
+export const deleteTaskData = (currentId) => {
+    return request.post('/TaskApply/DeleteTaskApply', null, {
+        params: {
+            pId: currentId,
+        },
+    });
+};
+
+/********************************\
+ * (审批人)同意申请
+\********************************/
+
+export const agreeTaskData = (data) => {
+    return request.post('/TaskApply/TaskApplyAudit', {
+        taskApplyId: data.chooseAgreeId,
+        taskPoints: data.point,
+        planFinishDate: data.finishDate,
+        planFinishHour: data.finishHour,
+    });
 };

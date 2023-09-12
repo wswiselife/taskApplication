@@ -2,7 +2,7 @@
  * @Author: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
  * @Date: 2023-08-31 10:49:42
  * @LastEditors: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
- * @LastEditTime: 2023-09-04 16:32:27
+ * @LastEditTime: 2023-09-12 11:40:14
  * @FilePath: \taskApplication\src\layout\NavBar\NavBar.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -18,7 +18,8 @@
 import { useRouter } from 'vue-router';
 import { userLogout } from '@/api/modules/user';
 
-import Create from './Create/Create.vue';
+import Create from './create/Create.vue';
+import { ElMessage } from 'element-plus';
 
 /********************************\
  * 公共引入处理
@@ -36,14 +37,22 @@ async function logoutbtn() {
             // 清除本地缓存
             localStorage.removeItem('token');
             localStorage.removeItem('authorityList');
-            router.push('/login');
+            router.push({ path: '/login' });
         } else {
             // 注销失败，打印错误信息
             console.error('注销失败:', response.message);
+            ElMessage({
+                message: response.message,
+                type:'error'
+            })
         }
     } catch (error) {
         // 捕获任何错误并打印
         console.error('发生错误:', error);
+        ElMessage({
+            message: '退出登录失败',
+            type:'error'
+        })
     }
 }
 </script>
@@ -54,8 +63,8 @@ async function logoutbtn() {
         <div class="navbar_left">
             <!-- logo -->
             <div class="logo">
-                <!-- <img src="../../assets/icon/user.svg" alt="" /> -->
-                logo
+                <img src="../../assets/img/logo.png" alt="logo" />
+                <span class="title">锦上云</span>
             </div>
             <!-- 创建按钮 -->
             <create></create>
@@ -66,15 +75,13 @@ async function logoutbtn() {
             <el-button class="logout" @click="logoutbtn">退出登录</el-button>
 
             <!-- 头像 -->
-            <div class="avatar">
-                <!-- <img src="" alt="" /> -->
-                avatar
-            </div>
+            <!-- todo -->
         </div>
     </div>
 </template>
 
 <style scoped lang="scss">
+@import '../../assets/css/variables.scss';
 .sidebar_container {
     width: 100%;
     display: flex;
@@ -89,6 +96,19 @@ async function logoutbtn() {
         align-items: center;
         gap: 20px;
         height: 100%;
+        margin-left: 25px;
+    }
+
+    .logo {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+
+        .title {
+            font-size: 16px;
+            color: $color-bfont;
+        }
     }
 
     .navbar_right {
@@ -98,6 +118,16 @@ async function logoutbtn() {
         align-items: center;
         gap: 20px;
         height: 100%;
+        margin-right: 25px;
+    }
+
+    .logout {
+        background-color: $color-primary;
+        color: $color-wfont;
+    }
+
+    .logout:hover {
+        color: $color-bfont;
     }
 }
 </style>

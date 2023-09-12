@@ -2,7 +2,7 @@
  * @Author: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
  * @Date: 2023-08-29 17:01:46
  * @LastEditors: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
- * @LastEditTime: 2023-09-04 16:32:11
+ * @LastEditTime: 2023-09-11 17:03:54
  * @FilePath: \taskApplication\src\views\Login\Login.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -18,6 +18,7 @@
 import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useUserLoginStore } from '../../store/modules/user';
+import { ElMessage } from 'element-plus';
 
 /********************************\
  * 公共引入处理
@@ -30,14 +31,28 @@ const userLoginStore = useUserLoginStore();
 \********************************/
 
 const form = reactive({
-    account: 'admin',
+    account: 'wayne',
     password: '123456',
 });
+
+const loginFormRef = ref(null);
 async function loginbtn() {
+    // if (!form.account) {
+    //     ElMessage({
+    //         message: '账号输入错误',
+    //         type: 'error',
+    //     });
+    // }
+    // if (!form.password) {
+    //     ElMessage({
+    //         message: '密码输入错误',
+    //     });
+    // }
+
     try {
         // 发送登录请求
         const response = await userLoginStore.fetchUserLoginAction(form);
-        // console.log('登录 response ===', response);
+        console.log('登录 response ===', response);
         if (response.code === 200) {
             // 存储 token 和 authorityList 到 localStorage
             localStorage.setItem('token', response.result.token);
@@ -45,18 +60,20 @@ async function loginbtn() {
                 'authorityList',
                 JSON.stringify(response.result.authorityList),
             );
-            router.push({ path: '/layout' });
+            router.push({ path: '/dashboard/apply' });
         } else {
-            // 登录失败，进行相应操作
-            console.log('登录失败');
+            console.log('response.message ===', response.message);
+            ElMessage({
+                message: response.message,
+                type: 'error',
+            });
         }
     } catch (error) {
-        // 请求失败或其他错误，进行相应操作
-        console.log('请求失败', error);
-
-        if (error.response) {
-            console.log('服务器返回错误', error.response);
-        }
+        console.log('error ===', error);
+        ElMessage({
+            message: '登录失败',
+            type: 'error',
+        });
     }
 }
 
@@ -68,15 +85,45 @@ function showPwd() {
     passwordType.value =
         passwordType.value === 'password' ? 'text' : 'password';
 }
+
+/********************************\
+ * 校验处理
+\********************************/
+// 创建一个引用
+const rules = reactive({
+    account: [
+        { required: true, message: '账号不能为空', trigger: 'blur' },
+        {
+            min: 3,
+            max: 15,
+            message: '账号长度在3到15个字符之间',
+            trigger: 'blur',
+        },
+    ],
+    password: [
+        { required: true, message: '密码不能为空', trigger: 'blur' },
+        {
+            min: 6,
+            max: 15,
+            message: '密码长度在3到15个字符之间',
+            trigger: 'blur',
+        },
+    ],
+});
 </script>
 
 <template>
     <div class="login_container">
-        <el-form :model="form" class="login_form">
+        <el-form
+            :model="form"
+            class="login_form"
+            :rules="rules"
+            ref="loginFormRef"
+        >
             <div class="title_container">
                 <h3 class="title">Login Form</h3>
             </div>
-            <el-form-item class="account">
+            <el-form-item class="account" prop="account">
                 <el-input
                     v-model="form.account"
                     class="form_input"
@@ -92,7 +139,7 @@ function showPwd() {
                     </template>
                 </el-input>
             </el-form-item>
-            <el-form-item class="password">
+            <el-form-item class="password" prop="password">
                 <el-input
                     v-model="form.password"
                     class="form_input"
@@ -121,7 +168,7 @@ function showPwd() {
 </template>
 
 <style lang="scss">
-$bg: #283443;
+@import '../../assets/css/variables.scss';
 
 .el-form-item--medium .el-form-item__content {
     line-height: 36px;
@@ -132,7 +179,7 @@ $bg: #283443;
 }
 
 .el-input__wrapper {
-    background-color: $bg;
+    background-color: $color-four;
     padding: 10px 12px;
 }
 
@@ -145,19 +192,20 @@ $bg: #283443;
 .el-button:hover {
     color: #000;
 }
+
+// 错误提示
+.el-form-item__error {
+    padding: 8px;
+}
 </style>
 
 <style scoped lang="scss">
-$bg: #2d3a4b;
-$bg_btn: #46a6ff;
-
-$dark_gray: #889aa4;
-$light_gray: #eee;
+@import '../../assets/css/variables.scss';
 
 .login_container {
     height: 100%;
     width: 100%;
-    background-color: $bg;
+    background-color: $color-four;
     overflow: hidden;
 
     .login_form {
@@ -168,10 +216,15 @@ $light_gray: #eee;
         overflow: hidden;
     }
 
+    .account,
+    .password {
+        margin-bottom: 25px;
+    }
+
     // title
     .title_container {
         .title {
-            color: $light_gray;
+            color: $color-bfont;
             font-size: 26px;
             margin: 0 auto 40px auto;
             text-align: center;
@@ -211,8 +264,13 @@ $light_gray: #eee;
 
     .login_btn {
         width: 100%;
-        background: $bg_btn;
-        border-color: $bg_btn;
+        background: $color-primary;
+        border-color: none;
+        color: $color-wfont;
+    }
+
+    .login_btn:hover {
+        color: $color-bfont;
     }
 }
 </style>
