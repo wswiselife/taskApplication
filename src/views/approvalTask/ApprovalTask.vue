@@ -2,7 +2,7 @@
  * @Author: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
  * @Date: 2023-08-31 16:37:21
  * @LastEditors: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
- * @LastEditTime: 2023-09-12 15:21:00
+ * @LastEditTime: 2023-09-12 17:44:43
  * @FilePath: \taskApplication\src\views\approvalTask\ApprovalTask.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AEmport
 -->
@@ -12,6 +12,11 @@ import { storeToRefs } from 'pinia';
 import { ref, reactive, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { formatDate } from '@/utils/formatTime';
+import {
+    formatProjectName,
+    formatTaskType,
+    
+} from '@/assets/data/vxeColumnData';
 // import { disabledPreviousDates } from '@/utils/limitDateSelect';
 /********************************\
  * 公共引入处理
@@ -25,6 +30,7 @@ onMounted(() => {
 \********************************/
 function getAuditUserData() {
     useAuditTaskList.fetchAuditTaskAction();
+    console.log('任务审批 auditTaskList ===', auditTaskList);
 }
 const useAuditTaskList = useAuditTaskStore();
 const { auditTaskList } = storeToRefs(useAuditTaskList);
@@ -126,20 +132,22 @@ async function agreeFun() {
  * 格式化日期
 \********************************/
 function disabledPreviousDates(time) {
-    console.log("Function called with time:", time);
+    console.log('Function called with time:', time);
     return time.getTime() < Date.now() - 8.64e7;
 }
 </script>
 
 <template>
     <div class="approval_container">
+        <!--  暂时不启动编辑功能   :edit-config="{ trigger: 'dblclick', mode: 'cell' }" -->
+        <!-- projectList、taskTypeList、auditUserList也没获取 -->
+        <!-- todo -->
         <vxe-table
             border
             align="center"
             show-overflow
             :data="auditTaskList"
             :column-config="{ resizable: true, useKey: 'field' }"
-            :edit-config="{ trigger: 'dblclick', mode: 'cell' }"
             :row-config="{ useKey: 'id' }"
             round
             @edit-actived="handleCellActivated"
@@ -154,13 +162,20 @@ function disabledPreviousDates(time) {
                 field="projectName"
                 title="项目名称"
                 :edit-render="{}"
-                width="100px"
+                width="120px"
             >
+                <template #default="{ row }">
+                    <span>{{ formatProjectName(row.projectId) }}</span>
+                </template>
                 <template #edit="{ row }">
-                    <vxe-input
-                        v-model="row.projectName"
-                        type="text"
-                    ></vxe-input>
+                    <vxe-select v-model="row.projectId" type="text" transfer>
+                        <vxe-option
+                            v-for="project in projectList"
+                            :key="project.id"
+                            :label="project.name"
+                            :value="project.id"
+                        />
+                    </vxe-select>
                 </template>
             </vxe-column>
             <!-- 项目描述 -->
@@ -184,11 +199,18 @@ function disabledPreviousDates(time) {
                 :edit-render="{}"
                 width="100px"
             >
+                <template #default="{ row }">
+                    {{ formatTaskType(row.taskTypeId) }}
+                </template>
                 <template #edit="{ row }">
-                    <vxe-input
-                        v-model="row.taskTypeName"
-                        type="text"
-                    ></vxe-input>
+                    <vxe-select v-model="row.taskTypeId" type="text" transfer>
+                        <vxe-option
+                            v-for="tasktype in taskTypeList"
+                            :key="tasktype.id"
+                            :label="tasktype.name"
+                            :value="tasktype.id"
+                        ></vxe-option>
+                    </vxe-select>
                 </template>
             </vxe-column>
             <!-- 计划完成小时数 -->
@@ -222,20 +244,13 @@ function disabledPreviousDates(time) {
                     ></vxe-input>
                 </template>
             </vxe-column>
-            <!-- 审批人 -->
+            <!-- 申请人 -->
             <vxe-column
                 field="employeeName"
                 title="申请人"
                 :edit-render="{}"
                 width="100px"
-            >
-                <template #edit="{ row }">
-                    <vxe-input
-                        v-model="row.employeeName"
-                        type="text"
-                    ></vxe-input>
-                </template>
-            </vxe-column>
+            ></vxe-column>
             <!-- 操作 -->
             <vxe-column field="operate" title="操作" width="180px">
                 <template #default="{ row }">

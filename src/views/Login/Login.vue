@@ -2,7 +2,7 @@
  * @Author: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
  * @Date: 2023-08-29 17:01:46
  * @LastEditors: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
- * @LastEditTime: 2023-09-11 17:03:54
+ * @LastEditTime: 2023-09-12 17:53:53
  * @FilePath: \taskApplication\src\views\Login\Login.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -80,10 +80,14 @@ async function loginbtn() {
 /********************************\
  * 密码眼睛处理
 \********************************/
+// 星号与显示密码直接的切换
 const passwordType = ref('password');
+// 小图标的切换
+const isPwdShown = ref(false);
 function showPwd() {
     passwordType.value =
         passwordType.value === 'password' ? 'text' : 'password';
+        isPwdShown.value = !isPwdShown.value;
 }
 
 /********************************\
@@ -156,7 +160,9 @@ const rules = reactive({
                     <!-- 右侧眼睛 -->
                     <template #suffix>
                         <span class="show_pwd" @click="showPwd">
-                            <img src="../../assets/icon/eye.svg" alt="" />
+                            <!-- <img src="../../assets/icon/eye.svg" alt="" /> -->
+                            <img v-if="isPwdShown" src="../../assets/icon/eye-open.svg" alt="Hide Password" />
+                            <img v-else src="../../assets/icon/eye.svg" alt="Show Password" />
                         </span>
                     </template>
                 </el-input>

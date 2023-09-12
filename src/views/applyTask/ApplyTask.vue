@@ -2,7 +2,15 @@
  * @Author: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
  * @Date: 2023-08-31 15:40:06
  * @LastEditors: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
- * @LastEditTime: 2023-09-12 15:38:22
+ * @LastEditTime: 2023-09-12 17:31:33
+ * @FilePath: \taskApplication\src\views\applyTask\ApplyTask.vue
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+-->
+<!--
+ * @Author: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
+ * @Date: 2023-08-31 15:40:06
+ * @LastEditors: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
+ * @LastEditTime: 2023-09-12 17:07:34
  * @FilePath: \taskApplication\src\views\applyTask\ApplyTask.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -28,6 +36,11 @@ import { ref, reactive, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { storeToRefs } from 'pinia';
 import { formatDate } from '@/utils/formatTime';
+import {
+    formatProjectName,
+    formatTaskType,
+    formatAudit,
+} from '@/assets/data/vxeColumnData';
 /********************************\
  * 公共引入处理
 \********************************/
@@ -58,7 +71,7 @@ const deleteTask = useDeleteTaskStore();
 \********************************/
 function getEmployeeTasList() {
     employeeTaskStore.fetchEmployeeTaskAction();
-    console.log('申请列表数据 ===', employeeTaskList);
+    // console.log('申请列表数据 ===', employeeTaskList);
 }
 // 列表展示数据
 const employeeTaskStore = useEmployeeTaskStore();
@@ -116,7 +129,6 @@ function dialogFormVisibleFun(currentId) {
 const projectList = ref([]);
 async function getUserProjectList() {
     const response = await userProjectList.fetchUserProjectListAction();
-    console.log(' projectionName-response ===', response);
     if (response && response.code === 200) {
         projectList.value = response.result;
     } else {
@@ -250,53 +262,15 @@ async function deleteTaskFun() {
 /********************************\
  * 选项方式修改
 \********************************/
-// const projectNameList = ref([
-//     { label: '希瑞', value: '116' },
-//     { label: '上线问题列表', value: '115' },
-//     { label: '鼎鹏', value: '1' },
-//     { label: '本田金属', value: '2' },
-//     { label: 'TaskList', value: '4' },
-//     { label: 'android学习', value: '5' },
-//     { label: '万宝', value: '6' },
-//     { label: '今先', value: '7' },
-//     { label: '', value: '' },
-// ]);
-
-const formatProjectName = (id) => {
-    if (id == '116') {
-        return '希瑞';
-    }
-    if (id == '115') {
-        return '上线问题列表';
-    }
-    if (id == '1') {
-        return '鼎鹏';
-    }
-    if (id == '2') {
-        return '本田金属';
-    }
-    if (id == '4') {
-        return 'TaskList';
-    }
-
-    if (id == '5') {
-        return 'android学习';
-    }
-    if (id == '6') {
-        return '万宝';
-    }
-    if (id == '7') {
-        return '今仙';
-    }
-    return '';
-};
 
 /********************************\
  * 触发单元格编辑时
 \********************************/
-function handleCellActivated() {
-    console.log('projectList ===', projectList.value);
-}
+// function handleCellActivated() {
+//     console.log('projectList ===', projectList.value);
+//     console.log('taskTypeList===', taskTypeList.value);
+//     console.log('auditUserList===', auditUserList.value);
+// }
 
 /********************************\
  * 处理单元格激活编辑状态(双击之后，自动获取焦点//todo)
@@ -385,11 +359,18 @@ function handleCellActivated() {
                 :edit-render="{}"
                 width="100px"
             >
+                <template #default="{ row }">
+                    {{ formatTaskType(row.taskTypeId) }}
+                </template>
                 <template #edit="{ row }">
-                    <vxe-input
-                        v-model="row.taskTypeName"
-                        type="text"
-                    ></vxe-input>
+                    <vxe-select v-model="row.taskTypeId" type="text" transfer>
+                        <vxe-option
+                            v-for="tasktype in taskTypeList"
+                            :key="tasktype.id"
+                            :label="tasktype.name"
+                            :value="tasktype.id"
+                        ></vxe-option>
+                    </vxe-select>
                 </template>
             </vxe-column>
             <!-- 计划完成小时数 -->
@@ -432,11 +413,18 @@ function handleCellActivated() {
                 :edit-render="{}"
                 width="100px"
             >
+                <template #default="{ row }">
+                    {{ formatAudit(row.applyAuditId) }}
+                </template>
                 <template #edit="{ row }">
-                    <vxe-input
-                        v-model="row.applyAuditName"
-                        type="text"
-                    ></vxe-input>
+                    <vxe-select v-model="row.applyAuditId" type="text" transfer>
+                        <vxe-option
+                            v-for="audit in auditUserList"
+                            :key="audit.id"
+                            :label="audit.nameEN"
+                            :value="audit.id"
+                        ></vxe-option>
+                    </vxe-select>
                 </template>
             </vxe-column>
             <!-- 操作 -->
@@ -532,7 +520,6 @@ function handleCellActivated() {
                         style="width: 100%"
                     />
                 </el-form-item>
-
                 <!-- 任务描述 -->
                 <el-form-item
                     label="任务描述"
