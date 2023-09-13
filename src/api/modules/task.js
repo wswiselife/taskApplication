@@ -2,7 +2,7 @@
  * @Author: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
  * @Date: 2023-09-01 10:00:28
  * @LastEditors: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
- * @LastEditTime: 2023-09-11 13:47:25
+ * @LastEditTime: 2023-09-13 16:59:04
  * @FilePath: \taskApplication\src\api\modules\task.js
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -13,7 +13,7 @@ import { request } from '../index';
 \********************************/
 // 新建任务
 export const createTask = (data) => {
-    console.log('data ===', data);
+    // console.log('data ===', data);
     return request.post('TaskApply/AddTaskApply', {
         taskDescription: data.taskDescription,
         projectId: data.projectId,

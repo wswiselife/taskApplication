@@ -2,7 +2,7 @@
  * @Author: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
  * @Date: 2023-08-31 16:37:21
  * @LastEditors: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
- * @LastEditTime: 2023-09-12 17:44:43
+ * @LastEditTime: 2023-09-13 09:37:08
  * @FilePath: \taskApplication\src\views\approvalTask\ApprovalTask.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AEmport
 -->
@@ -12,11 +12,7 @@ import { storeToRefs } from 'pinia';
 import { ref, reactive, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { formatDate } from '@/utils/formatTime';
-import {
-    formatProjectName,
-    formatTaskType,
-    
-} from '@/assets/data/vxeColumnData';
+import { formatProjectName, formatTaskType } from '@/assets/data/vxeColumnData';
 // import { disabledPreviousDates } from '@/utils/limitDateSelect';
 /********************************\
  * 公共引入处理
@@ -52,7 +48,6 @@ const form = reactive({
 const showAgreeDialog = ref(false);
 // 选择的id
 const chooseAgreeId = ref(null);
-
 function showAgreeDialogFun(currentId) {
     chooseAgreeId.value = currentId;
     form.chooseAgreeId = currentId;
@@ -129,7 +124,7 @@ async function agreeFun() {
 }
 
 /********************************\
- * 格式化日期
+ * 日期选择限制//todo
 \********************************/
 function disabledPreviousDates(time) {
     console.log('Function called with time:', time);
@@ -178,24 +173,11 @@ function disabledPreviousDates(time) {
                     </vxe-select>
                 </template>
             </vxe-column>
-            <!-- 项目描述 -->
-            <vxe-column
-                field="taskDescription"
-                title="项目描述"
-                :edit-render="{}"
-                width="250px"
-            >
-                <template #edit="{ row }">
-                    <vxe-input
-                        v-model="row.taskDescription"
-                        type="text"
-                    ></vxe-input>
-                </template>
-            </vxe-column>
-            <!-- 项目类型 -->
+
+            <!-- 任务类型 -->
             <vxe-column
                 field="taskTypeName"
-                title="项目类型"
+                title="任务类型"
                 :edit-render="{}"
                 width="100px"
             >
@@ -213,6 +195,21 @@ function disabledPreviousDates(time) {
                     </vxe-select>
                 </template>
             </vxe-column>
+            <!-- 项目描述 -->
+            <vxe-column
+                field="taskDescription"
+                title="任务描述"
+                :edit-render="{}"
+                width="250px"
+            >
+                <template #edit="{ row }">
+                    <vxe-input
+                        v-model="row.taskDescription"
+                        type="text"
+                    ></vxe-input>
+                </template>
+            </vxe-column>
+
             <!-- 计划完成小时数 -->
             <vxe-column
                 field="planFinishHour"

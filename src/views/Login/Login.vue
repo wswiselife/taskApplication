@@ -2,7 +2,7 @@
  * @Author: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
  * @Date: 2023-08-29 17:01:46
  * @LastEditors: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
- * @LastEditTime: 2023-09-12 17:53:53
+ * @LastEditTime: 2023-09-13 17:43:54
  * @FilePath: \taskApplication\src\views\Login\Login.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -37,17 +37,19 @@ const form = reactive({
 
 const loginFormRef = ref(null);
 async function loginbtn() {
-    // if (!form.account) {
-    //     ElMessage({
-    //         message: '账号输入错误',
-    //         type: 'error',
-    //     });
-    // }
-    // if (!form.password) {
-    //     ElMessage({
-    //         message: '密码输入错误',
-    //     });
-    // }
+    if (!form.account) {
+        ElMessage({
+            message: '账号输入错误',
+            type: 'error',
+        });
+        return;
+    }
+    if (!form.password) {
+        ElMessage({
+            message: '密码输入错误',
+        });
+        return;
+    }
 
     try {
         // 发送登录请求
@@ -56,11 +58,22 @@ async function loginbtn() {
         if (response.code === 200) {
             // 存储 token 和 authorityList 到 localStorage
             localStorage.setItem('token', response.result.token);
+            localStorage.setItem('username', form.account); // 存储用户名到本地
             localStorage.setItem(
                 'authorityList',
                 JSON.stringify(response.result.authorityList),
             );
-            router.push({ path: '/dashboard/apply' });
+
+            // 检查是否具有管理员权限
+            const hasAdminAuthority =
+                response.result.authorityList.includes('WEB_TaskApplyAudit');
+
+            // 根据权限跳转到相应的页面
+            if (hasAdminAuthority) {
+                router.push({ path: '/dashboard/approval' }); // 第一个页面
+            } else {
+                router.push({ path: '/dashboard/apply' }); // 第二个页面
+            }
         } else {
             console.log('response.message ===', response.message);
             ElMessage({
@@ -87,45 +100,46 @@ const isPwdShown = ref(false);
 function showPwd() {
     passwordType.value =
         passwordType.value === 'password' ? 'text' : 'password';
-        isPwdShown.value = !isPwdShown.value;
+    isPwdShown.value = !isPwdShown.value;
 }
 
 /********************************\
  * 校验处理
 \********************************/
 // 创建一个引用
-const rules = reactive({
-    account: [
-        { required: true, message: '账号不能为空', trigger: 'blur' },
-        {
-            min: 3,
-            max: 15,
-            message: '账号长度在3到15个字符之间',
-            trigger: 'blur',
-        },
-    ],
-    password: [
-        { required: true, message: '密码不能为空', trigger: 'blur' },
-        {
-            min: 6,
-            max: 15,
-            message: '密码长度在3到15个字符之间',
-            trigger: 'blur',
-        },
-    ],
-});
+// const rules = reactive({
+//     account: [
+//         { required: true, message: '账号不能为空', trigger: 'blur' },
+//         {
+//             min: 3,
+//             max: 15,
+//             message: '账号长度在3到15个字符之间',
+//             trigger: 'blur',
+//         },
+//     ],
+//     password: [
+//         { required: true, message: '密码不能为空', trigger: 'blur' },
+//         {
+//             min: 6,
+//             max: 15,
+//             message: '密码长度在3到15个字符之间',
+//             trigger: 'blur',
+//         },
+//     ],
+// });
 </script>
 
 <template>
     <div class="login_container">
+        <!-- :rules="rules" -->
         <el-form
             :model="form"
             class="login_form"
-            :rules="rules"
             ref="loginFormRef"
+            @keyup.enter="loginbtn"
         >
             <div class="title_container">
-                <h3 class="title">Login Form</h3>
+                <h3 class="title">任务申请</h3>
             </div>
             <el-form-item class="account" prop="account">
                 <el-input
@@ -161,14 +175,25 @@ const rules = reactive({
                     <template #suffix>
                         <span class="show_pwd" @click="showPwd">
                             <!-- <img src="../../assets/icon/eye.svg" alt="" /> -->
-                            <img v-if="isPwdShown" src="../../assets/icon/eye-open.svg" alt="Hide Password" />
-                            <img v-else src="../../assets/icon/eye.svg" alt="Show Password" />
+                            <img
+                                v-if="isPwdShown"
+                                src="../../assets/icon/eye-open.svg"
+                                alt="Hide Password"
+                            />
+                            <img
+                                v-else
+                                src="../../assets/icon/eye.svg"
+                                alt="Show Password"
+                            />
                         </span>
                     </template>
                 </el-input>
             </el-form-item>
 
-            <el-button @click="loginbtn" class="login_btn">Login</el-button>
+            <el-button @click="loginbtn" class="login_btn">
+                <span class="letter">登</span>
+                <span class="letter">录</span>
+            </el-button>
         </el-form>
     </div>
 </template>
@@ -273,6 +298,13 @@ const rules = reactive({
         background: $color-primary;
         border-color: none;
         color: $color-wfont;
+
+        .letter {
+            display: block;
+        }
+        .letter:first-child {
+            margin-right: 25px;
+        }
     }
 
     .login_btn:hover {

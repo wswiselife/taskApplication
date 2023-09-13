@@ -16,6 +16,11 @@ const useAuditTypeList = useAuditUserListStore();
 import { ElMessage } from 'element-plus';
 // 时间格式化
 import moment from 'moment';
+// 创建数据共享
+import { useIsCreatedStore } from '@/store/public';
+// import { storeToRefs } from 'pinia';
+const isCreateStore = useIsCreatedStore();
+// const { isCreate } = storeToRefs(isCreateStore);
 
 /********************************\
  * 表单数据定义
@@ -28,6 +33,15 @@ const form = reactive({
     planFinishDate: '', // 计划完成日期
     applyAuditId: null, // 审批人ID
 });
+
+function resetForm() {
+    form.taskDescription = '';
+    form.projectId = null;
+    form.taskTypeId = null;
+    form.planFinishHour = null;
+    form.planFinishDate = '';
+    form.applyAuditId = null;
+}
 
 /********************************\
  * 控制弹出层表单显示隐藏
@@ -102,6 +116,7 @@ function getFormattedDate(date) {
 /********************************\
  * 对话框确认操作
 \********************************/
+
 async function createTaskBtn() {
     // 任务描述
     if (!form.taskDescription) {
@@ -161,11 +176,15 @@ async function createTaskBtn() {
         if (response && response.code === 200) {
             // 关闭对话框
             dialogFormVisible.value = false;
+            // 数据共享
+            isCreateStore.setIsCreated(true);
             // 提示新建完成
             ElMessage({
                 message: '新建任务成功',
                 type: 'success',
             });
+            // 清除所有数据
+            resetForm();
         } else {
             // 可以添加其他的错误处理逻辑
             ElMessage({
@@ -194,7 +213,7 @@ async function createTaskBtn() {
             <el-form :model="form">
                 <!-- 项目ID-选择框 -->
                 <el-form-item
-                    label="项目"
+                    label="项目名称"
                     prop="projectId"
                     :label-width="formLabelWidth"
                 >
@@ -212,7 +231,7 @@ async function createTaskBtn() {
                 </el-form-item>
                 <!-- 任务类别ID-选择框 -->
                 <el-form-item
-                    label="任务类别"
+                    label="任务类型"
                     prop="auditUser"
                     :label-width="formLabelWidth"
                 >
@@ -253,7 +272,10 @@ async function createTaskBtn() {
                     prop="name"
                     :label-width="formLabelWidth"
                 >
-                    <el-input v-model="form.planFinishHour" />
+                    <el-input
+                        v-model="form.planFinishHour"
+                        placeholder="请输入计划完成小时数"
+                    />
                 </el-form-item>
                 <!-- 计划完成日期 -->
                 <el-form-item
@@ -274,7 +296,11 @@ async function createTaskBtn() {
                     prop="desc"
                     :label-width="formLabelWidth"
                 >
-                    <el-input type="textarea" v-model="form.taskDescription" />
+                    <el-input
+                        type="textarea"
+                        v-model="form.taskDescription"
+                        placeholder="请输入任务描述"
+                    />
                 </el-form-item>
             </el-form>
             <template #footer>

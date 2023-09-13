@@ -2,7 +2,7 @@
  * @Author: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
  * @Date: 2023-08-31 15:40:06
  * @LastEditors: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
- * @LastEditTime: 2023-09-12 17:31:33
+ * @LastEditTime: 2023-09-13 17:10:40
  * @FilePath: \taskApplication\src\views\applyTask\ApplyTask.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -32,7 +32,7 @@ import {
     useDeleteTaskStore,
 } from '@/store/modules/task.js';
 
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted,watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { storeToRefs } from 'pinia';
 import { formatDate } from '@/utils/formatTime';
@@ -41,6 +41,16 @@ import {
     formatTaskType,
     formatAudit,
 } from '@/assets/data/vxeColumnData';
+import {
+    useSingleUpdateProjectIdStore,
+    useSingleUpdateTaskTypeIdStore,
+    useSingleUpdateAuditIdStore,
+    useSingleUpdatePlanFinishHourStore,
+    useSingleUpdatePlanFinishDateStore,
+    useSingleUpdateDescriptionStore,
+} from '@/store/modules/singleUpdate';
+
+import {useIsCreatedStore} from '@/store/public'
 /********************************\
  * 公共引入处理
 \********************************/
@@ -73,11 +83,30 @@ function getEmployeeTasList() {
     employeeTaskStore.fetchEmployeeTaskAction();
     // console.log('申请列表数据 ===', employeeTaskList);
 }
-// 列表展示数据
-const employeeTaskStore = useEmployeeTaskStore();
-// 这里一定要用storeTorefs,而不是ref
+const employeeTaskStore = useEmployeeTaskStore();// 列表展示数据
+// 这里一定要用storeTorefs,而不是ref // todo
 const { employeeTaskList } = storeToRefs(employeeTaskStore);
 
+// 获取创建成功的数据
+const isCreatedStore = useIsCreatedStore()
+const {isCreated} = storeToRefs(isCreatedStore)
+
+watch(isCreated, (newValue) => {
+    if (newValue) {
+        getEmployeeTasList();
+        isCreatedStore.setIsCreated(false);
+    }
+});
+
+/********************************\
+ * 单元格修改
+\********************************/
+const singleUpdateProjectIdStore = useSingleUpdateProjectIdStore();
+const singleUpdateTaskTypeIdStore = useSingleUpdateTaskTypeIdStore();
+const singleUpdateAuditIdStore = useSingleUpdateAuditIdStore();
+const singleUpdateDescriptionStore = useSingleUpdateDescriptionStore();
+const singleUpdatePlanFinishHourStore = useSingleUpdatePlanFinishHourStore();
+const singleUpdatePlanFinishDateStore = useSingleUpdatePlanFinishDateStore();
 /********************************\
  * 控制弹出层、表单响应
 \********************************/
@@ -85,7 +114,7 @@ const dialogFormVisible = ref(false);
 const formLabelWidth = '120px';
 // 储存选择的那条数据
 const chooseModifyId = ref(null);
-// console.log('employeeTaskList任务描述 ===', employeeTaskList);
+console.log('employeeTaskList任务描述 ===', employeeTaskList);
 
 const form = reactive({
     taskDescription: '', // 任务描述
@@ -117,10 +146,15 @@ function dialogFormVisibleFun(currentId) {
         (item) => item.id === chooseModifyId.value,
     );
 
+    console.log('selectedItem ===', selectedItem);
+
     if (selectedItem) {
         form.taskDescription = selectedItem.taskDescription;
         form.planFinishHour = selectedItem.planFinishHour;
         form.planFinishDate = selectedItem.planFinishDate;
+        form.projectId = selectedItem.projectId; // 项目ID
+        form.taskTypeId = selectedItem.taskTypeId; // 任务类别ID
+        form.applyAuditId = selectedItem.applyAuditId; // 审批人ID
     }
 }
 /********************************\
@@ -218,7 +252,6 @@ async function modify() {
 \********************************/
 const showDeleteDialog = ref(false);
 const chooseDeleteId = ref(null);
-
 function showDeleteDialogFun(currentId) {
     showDeleteDialog.value = true;
     chooseDeleteId.value = currentId;
@@ -260,17 +293,241 @@ async function deleteTaskFun() {
 }
 
 /********************************\
- * 选项方式修改
+ * 单元格修改公共逻辑(获取选择行的id)
 \********************************/
+const prevValue = ref({});
+const xTable = ref(null);
+const oldValue = ref(null);
+// 单元格获得焦点时调用
+function handleCellActivated({ row, column }) {
+    prevValue.value = row.id;
+    console.log('当前行 prevValue.value ===', prevValue.value);
+
+    if (column.property === 'taskDescription') {
+        oldValue.value = row.taskDescription;
+    } else if (column.property === 'planFinishHour') {
+        oldValue.value = row.planFinishHour;
+    } else if (column.property === 'planFinishDate') {
+        oldValue.value = row.planFinishDate;
+    }
+}
+// 单元格失去焦点时调用
+function handleCellClosed({ row, column }) {
+    if (column.property === 'taskDescription') {
+        // 值没改变时，不需要进行修改
+        if (oldValue.value !== row.taskDescription) {
+            singleUpdateDescription(row);
+        }
+    } else if (column.property === 'planFinishHour') {
+        // 值没改变时，不需要进行修改
+        if (oldValue.value !== row.planFinishHour) {
+            singleUpdatePlanFinishHour(row);
+        }
+    } else if (column.property === 'planFinishDate') {
+        // 值没改变时，不需要进行修改
+        if (oldValue.value !== row.planFinishDate) {
+            singleUpdatePlanFinishDate(row);
+        }
+    }
+}
 
 /********************************\
- * 触发单元格编辑时
+ * 选项方式修改
 \********************************/
-// function handleCellActivated() {
-//     console.log('projectList ===', projectList.value);
-//     console.log('taskTypeList===', taskTypeList.value);
-//     console.log('auditUserList===', auditUserList.value);
-// }
+// 项目名称单个修改
+async function singleUpdateProjectId(row) {
+    try {
+        // console.log('项目ID已更改为:', row.projectId);
+        // 如果需要，你可以在这里调用其他函数或更新其他数据
+        const response =
+            await singleUpdateProjectIdStore.fetchSUProjectIdAction({
+                pProjectId: row.projectId,
+                pTaskApplyId: prevValue.value,
+            });
+
+        if (response && response.code === 200) {
+            ElMessage({
+                message: '修改项目名称成功',
+                type: 'success',
+            });
+        } else {
+            ElMessage({
+                message: response.message,
+                type: 'error',
+            });
+        }
+        // 清除活动单元格的状态
+        // xTable.value.clearActived();
+    } catch (error) {
+        console.log('error ===', error);
+        ElMessage({
+            message: '修改项目名称失败',
+        });
+    }
+}
+
+// 任务类型单元格修改
+async function singleUpdateTaskTypeId(row) {
+    try {
+        // console.log('项目ID已更改为:', row.taskTypeId);
+        // 如果需要，你可以在这里调用其他函数或更新其他数据
+        const response =
+            await singleUpdateTaskTypeIdStore.fetchSUTaskTypeIdAction({
+                pTaskTypeId: row.taskTypeId,
+                pTaskApplyId: prevValue.value,
+            });
+
+        if (response && response.code === 200) {
+            ElMessage({
+                message: '修改任务类型成功',
+                type: 'success',
+            });
+        } else {
+            ElMessage({
+                message: response.message,
+                type: 'error',
+            });
+        }
+        // 清除活动单元格的状态
+        // xTable.value.clearActived();
+    } catch (error) {
+        console.log('error ===', error);
+        ElMessage({
+            message: '修改任务类型失败',
+        });
+    }
+}
+
+// 审批人单元格修改
+async function singleUpdateAuditId(row) {
+    try {
+        // console.log('项目ID已更改为:', row.applyAuditId);
+        // 如果需要，你可以在这里调用其他函数或更新其他数据
+        const response = await singleUpdateAuditIdStore.fetchSUAuditIdAction({
+            pApplyAuditId: row.applyAuditId,
+            pTaskApplyId: prevValue.value,
+        });
+
+        if (response && response.code === 200) {
+            ElMessage({
+                message: '修改审批人成功',
+                type: 'success',
+            });
+        } else {
+            ElMessage({
+                message: response.message,
+                type: 'error',
+            });
+        }
+        // 清除活动单元格的状态
+        // xTable.value.clearActived();
+    } catch (error) {
+        console.log('error ===', error);
+        ElMessage({
+            message: '修改审批人失败',
+        });
+    }
+}
+
+// 任务描述单元格修改
+async function singleUpdateDescription(row) {
+    try {
+        // console.log('项目ID已更改为:', row.taskDescription);
+        // 如果需要，你可以在这里调用其他函数或更新其他数据
+        const response =
+            await singleUpdateDescriptionStore.fetchSUDescriptionAction({
+                pTaskDescription: row.taskDescription,
+                pTaskApplyId: prevValue.value,
+            });
+
+        if (response && response.code === 200) {
+            ElMessage({
+                message: '修改任务描述成功',
+                type: 'success',
+            });
+        } else {
+            ElMessage({
+                message: response.message,
+                type: 'error',
+            });
+        }
+        // 清除活动单元格的状态
+        // xTable.value.clearActived();
+    } catch (error) {
+        console.log('error ===', error);
+        ElMessage({
+            message: '修改任务描述失败',
+        });
+    }
+}
+
+// 计划完成小时数单元格修改
+async function singleUpdatePlanFinishHour(row) {
+    try {
+        // console.log('项目ID已更改为:', row.planFinishHour);
+        // 如果需要，你可以在这里调用其他函数或更新其他数据
+        const response =
+            await singleUpdatePlanFinishHourStore.fetchSUPlanFinishHourAction({
+                pPlanFinishHour: row.planFinishHour,
+                pTaskApplyId: prevValue.value,
+            });
+
+        if (response && response.code === 200) {
+            ElMessage({
+                message: '修改计划完成小时数成功',
+                type: 'success',
+            });
+        } else {
+            ElMessage({
+                message: response.message,
+                type: 'error',
+            });
+        }
+        // 清除活动单元格的状态
+        // xTable.value.clearActived();
+    } catch (error) {
+        console.log('error ===', error);
+        ElMessage({
+            message: '修改计划完成小时数失败',
+        });
+    }
+}
+
+// 计划完成日期单元格修改
+async function singleUpdatePlanFinishDate(row) {
+    try {
+        // console.log('项目ID已更改为:', row.planFinishDate);
+        // 如果需要，你可以在这里调用其他函数或更新其他数据
+        const response =
+            await singleUpdatePlanFinishDateStore.fetchSUPlanFinishDateAction({
+                pPlanFinishDate: row.planFinishDate,
+                pTaskApplyId: prevValue.value,
+            });
+
+        if (response && response.code === 200) {
+            ElMessage({
+                message: '修改计划完成日期成功',
+                type: 'success',
+            });
+        } else {
+            ElMessage({
+                message: response.message,
+                type: 'error',
+            });
+        }
+        // 清除活动单元格的状态
+        // xTable.value.clearActived();
+    } catch (error) {
+        console.log('error ===', error);
+        ElMessage({
+            message: '修改计划完成日期失败',
+        });
+    }
+}
+
+/********************************\
+ * 触发单元格编辑时,获取对应权限
+\********************************/
 
 /********************************\
  * 处理单元格激活编辑状态(双击之后，自动获取焦点//todo)
@@ -328,7 +585,12 @@ async function deleteTaskFun() {
                     <span>{{ formatProjectName(row.projectId) }}</span>
                 </template>
                 <template #edit="{ row }">
-                    <vxe-select v-model="row.projectId" type="text" transfer>
+                    <vxe-select
+                        v-model="row.projectId"
+                        type="text"
+                        transfer
+                        @change="singleUpdateProjectId(row)"
+                    >
                         <vxe-option
                             v-for="project in projectList"
                             :key="project.id"
@@ -338,10 +600,36 @@ async function deleteTaskFun() {
                     </vxe-select>
                 </template>
             </vxe-column>
+            <!-- 项目类型 -->
+            <vxe-column
+                field="taskTypeName"
+                title="任务类型"
+                :edit-render="{}"
+                width="100px"
+            >
+                <template #default="{ row }">
+                    {{ formatTaskType(row.taskTypeId) }}
+                </template>
+                <template #edit="{ row }">
+                    <vxe-select
+                        v-model="row.taskTypeId"
+                        type="text"
+                        transfer
+                        @change="singleUpdateTaskTypeId(row)"
+                    >
+                        <vxe-option
+                            v-for="tasktype in taskTypeList"
+                            :key="tasktype.id"
+                            :label="tasktype.name"
+                            :value="tasktype.id"
+                        ></vxe-option>
+                    </vxe-select>
+                </template>
+            </vxe-column>
             <!-- 项目描述 -->
             <vxe-column
                 field="taskDescription"
-                title="项目描述"
+                title="任务描述"
                 :edit-render="{}"
                 width="250px"
             >
@@ -350,27 +638,6 @@ async function deleteTaskFun() {
                         v-model="row.taskDescription"
                         type="text"
                     ></vxe-input>
-                </template>
-            </vxe-column>
-            <!-- 项目类型 -->
-            <vxe-column
-                field="taskTypeName"
-                title="项目类型"
-                :edit-render="{}"
-                width="100px"
-            >
-                <template #default="{ row }">
-                    {{ formatTaskType(row.taskTypeId) }}
-                </template>
-                <template #edit="{ row }">
-                    <vxe-select v-model="row.taskTypeId" type="text" transfer>
-                        <vxe-option
-                            v-for="tasktype in taskTypeList"
-                            :key="tasktype.id"
-                            :label="tasktype.name"
-                            :value="tasktype.id"
-                        ></vxe-option>
-                    </vxe-select>
                 </template>
             </vxe-column>
             <!-- 计划完成小时数 -->
@@ -417,7 +684,12 @@ async function deleteTaskFun() {
                     {{ formatAudit(row.applyAuditId) }}
                 </template>
                 <template #edit="{ row }">
-                    <vxe-select v-model="row.applyAuditId" type="text" transfer>
+                    <vxe-select
+                        v-model="row.applyAuditId"
+                        type="text"
+                        transfer
+                        @change="singleUpdateAuditId(row)"
+                    >
                         <vxe-option
                             v-for="audit in auditUserList"
                             :key="audit.id"
@@ -444,11 +716,11 @@ async function deleteTaskFun() {
         </vxe-table>
 
         <!-- 修改的弹出框 -->
-        <el-dialog v-model="dialogFormVisible" title="修改申请" modal="true">
+        <el-dialog v-model="dialogFormVisible" title="修改任务" modal="true">
             <el-form :model="form">
                 <!-- 项目ID-选择框 -->
                 <el-form-item
-                    label="项目"
+                    label="项目名称"
                     prop="projectId"
                     :label-width="formLabelWidth"
                 >
@@ -466,7 +738,7 @@ async function deleteTaskFun() {
                 </el-form-item>
                 <!-- 任务类别ID-选择框 -->
                 <el-form-item
-                    label="任务类别"
+                    label="任务类型"
                     prop="auditUser"
                     :label-width="formLabelWidth"
                 >
@@ -545,8 +817,8 @@ async function deleteTaskFun() {
         </el-dialog>
 
         <!-- 确定删除提示框 -->
-        <el-dialog v-model="showDeleteDialog" title="删除申请">
-            确定删除申请吗
+        <el-dialog v-model="showDeleteDialog" title="删除任务">
+            确定删除任务吗
             <template #footer>
                 <span class="dialog-footer">
                     <el-button
