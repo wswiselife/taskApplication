@@ -2,7 +2,7 @@
  * @Author: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
  * @Date: 2023-08-29 17:01:46
  * @LastEditors: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
- * @LastEditTime: 2023-09-13 17:43:54
+ * @LastEditTime: 2023-09-18 13:57:26
  * @FilePath: \taskApplication\src\views\Login\Login.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -31,22 +31,30 @@ const userLoginStore = useUserLoginStore();
 \********************************/
 
 const form = reactive({
-    account: 'wayne',
-    password: '123456',
+    account: '',
+    password: '',
 });
 
 const loginFormRef = ref(null);
-async function loginbtn() {
+async function loginbtn () {
+    if (!form.account && !form.password) {
+        ElMessage({
+            message: '账号和密码不能为空',
+            type: 'error',
+        });
+        return;
+    }
     if (!form.account) {
         ElMessage({
-            message: '账号输入错误',
+            message: '账号不能为空',
             type: 'error',
         });
         return;
     }
     if (!form.password) {
         ElMessage({
-            message: '密码输入错误',
+            message: '密码不能为空',
+            type:'error'
         });
         return;
     }
@@ -82,9 +90,10 @@ async function loginbtn() {
             });
         }
     } catch (error) {
+        //句号，回车，error todo
         console.log('error ===', error);
         ElMessage({
-            message: '登录失败',
+            message: `登录失败。${error}`,
             type: 'error',
         });
     }
@@ -106,27 +115,6 @@ function showPwd() {
 /********************************\
  * 校验处理
 \********************************/
-// 创建一个引用
-// const rules = reactive({
-//     account: [
-//         { required: true, message: '账号不能为空', trigger: 'blur' },
-//         {
-//             min: 3,
-//             max: 15,
-//             message: '账号长度在3到15个字符之间',
-//             trigger: 'blur',
-//         },
-//     ],
-//     password: [
-//         { required: true, message: '密码不能为空', trigger: 'blur' },
-//         {
-//             min: 6,
-//             max: 15,
-//             message: '密码长度在3到15个字符之间',
-//             trigger: 'blur',
-//         },
-//     ],
-// });
 </script>
 
 <template>
@@ -146,7 +134,7 @@ function showPwd() {
                     v-model="form.account"
                     class="form_input"
                     type="text"
-                    placeholder="account"
+                    placeholder="请输入账号"
                 >
                     <!-- 左侧小icon -->
                     <template #prefix>
@@ -162,7 +150,7 @@ function showPwd() {
                     v-model="form.password"
                     class="form_input"
                     :type="passwordType"
-                    placeholder="password"
+                    placeholder="请输入密码"
                 >
                     <!-- 左侧小icon -->
                     <template #prefix>

@@ -2,7 +2,7 @@
  * @Author: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
  * @Date: 2023-08-31 16:37:21
  * @LastEditors: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
- * @LastEditTime: 2023-09-13 09:37:08
+ * @LastEditTime: 2023-09-18 13:53:21
  * @FilePath: \taskApplication\src\views\approvalTask\ApprovalTask.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AEmport
 -->
@@ -11,9 +11,14 @@ import { useAuditTaskStore, useAgreeTaskStore } from '@/store/modules/task';
 import { storeToRefs } from 'pinia';
 import { ref, reactive, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
-import { formatDate } from '@/utils/formatTime';
+import { getFormattedDateTwo } from '@/utils/format/formatDate';
 import { formatProjectName, formatTaskType } from '@/assets/data/vxeColumnData';
 // import { disabledPreviousDates } from '@/utils/limitDateSelect';
+import { disabledPreviousDates } from '@/utils/limit/limitDateSelect';
+// 小时数校验
+import { validateHoursInput } from '@/utils/validate/validateHoursInput';
+// 点数校验
+import { validatePoint } from '@/utils/validate/validatePoint';
 /********************************\
  * 公共引入处理
 \********************************/
@@ -68,9 +73,11 @@ function showAgreeDialogFun(currentId) {
  * 确认同意
 \********************************/
 async function agreeFun() {
-    if (!form.point) {
+    // 验证点数
+    const validatePointInputResult = validatePoint(form.point);
+    if (!validatePointInputResult.isValid) {
         ElMessage({
-            message: '请填写点数',
+            message: validatePointInputResult.message,
             type: 'error',
         });
         return;
@@ -78,15 +85,17 @@ async function agreeFun() {
 
     if (!form.finishDate) {
         ElMessage({
-            message: '请选择完成日期',
+            message: '请选择计划完成日期',
             type: 'error',
         });
         return;
     }
 
-    if (!form.finishHour) {
+    // 验证小时数
+    const validateHoursInputResult = validateHoursInput(form.finishHour);
+    if (!validateHoursInputResult.isValid) {
         ElMessage({
-            message: '请输入完成小时数',
+            message: validateHoursInputResult.message,
             type: 'error',
         });
         return;
@@ -100,7 +109,7 @@ async function agreeFun() {
             showAgreeDialog.value = false;
             // 提示成功
             ElMessage({
-                message: '审批任务成功',
+                message: '任务审批成功',
                 type: 'success',
             });
             // 重新发送请求
@@ -117,7 +126,7 @@ async function agreeFun() {
         console.log('error ===', error);
         showAgreeDialog.value = false;
         ElMessage({
-            message: '审批失败',
+            message: '任务审批失败',
             type: 'error',
         });
     }
@@ -126,10 +135,6 @@ async function agreeFun() {
 /********************************\
  * 日期选择限制//todo
 \********************************/
-function disabledPreviousDates(time) {
-    console.log('Function called with time:', time);
-    return time.getTime() < Date.now() - 8.64e7;
-}
 </script>
 
 <template>
@@ -141,6 +146,7 @@ function disabledPreviousDates(time) {
             border
             align="center"
             show-overflow
+            max-height="600px"
             :data="auditTaskList"
             :column-config="{ resizable: true, useKey: 'field' }"
             :row-config="{ useKey: 'id' }"
@@ -232,7 +238,7 @@ function disabledPreviousDates(time) {
                 width="140px"
             >
                 <template #default="{ row }">
-                    {{ formatDate(row.planFinishDate) }}
+                    {{ getFormattedDateTwo(row.planFinishDate) }}
                 </template>
                 <template #edit="{ row }">
                     <vxe-input
@@ -280,9 +286,7 @@ function disabledPreviousDates(time) {
                         type="date"
                         placeholder="选择计划完成日期"
                         style="width: 100%"
-                        :picker-options="{
-                            disabledDate: disabledPreviousDates,
-                        }"
+                        :disabledDate="disabledPreviousDates"
                     />
                 </el-form-item>
             </el-form>

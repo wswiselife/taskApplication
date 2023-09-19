@@ -2,7 +2,7 @@
  * @Author: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
  * @Date: 2023-08-31 15:40:06
  * @LastEditors: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
- * @LastEditTime: 2023-09-13 17:10:40
+ * @LastEditTime: 2023-09-18 13:55:09
  * @FilePath: \taskApplication\src\views\applyTask\ApplyTask.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -22,6 +22,8 @@
  * @FilePath: \taskApplication\src\views\applyTask\ApplyTask.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
+
+<!-- // todo 表单正则的验证 -->
 <script setup>
 import {
     useUserProjectListStore,
@@ -32,10 +34,9 @@ import {
     useDeleteTaskStore,
 } from '@/store/modules/task.js';
 
-import { ref, reactive, onMounted,watch } from 'vue';
+import { ref, reactive, onMounted, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { storeToRefs } from 'pinia';
-import { formatDate } from '@/utils/formatTime';
 import {
     formatProjectName,
     formatTaskType,
@@ -50,7 +51,16 @@ import {
     useSingleUpdateDescriptionStore,
 } from '@/store/modules/singleUpdate';
 
-import {useIsCreatedStore} from '@/store/public'
+import { useIsCreatedStore } from '@/store/public';
+// 校验
+import { validateHoursInput } from '@/utils/validate/validateHoursInput';
+import {
+    getFormattedDate,
+    getFormattedDateTwo,
+} from '@/utils/format/formatDate';
+import { disabledPreviousDates } from '@/utils/limit/limitDateSelect';
+// 任务描述验证
+import { validateDescriptionInput } from '@/utils/validate/validateDescript';
 /********************************\
  * 公共引入处理
 \********************************/
@@ -58,12 +68,6 @@ import {useIsCreatedStore} from '@/store/public'
 onMounted(() => {
     // 进入时获取列表数据
     getEmployeeTasList();
-    // 调用用户权限项目接口
-    getUserProjectList();
-    // 调用获取任务类型接口
-    getTaskTypeList();
-    // 调用审批人接口
-    getAuditUserList();
 });
 
 // 修改的选项的权限获取
@@ -81,15 +85,15 @@ const deleteTask = useDeleteTaskStore();
 \********************************/
 function getEmployeeTasList() {
     employeeTaskStore.fetchEmployeeTaskAction();
-    // console.log('申请列表数据 ===', employeeTaskList);
+    console.log('申请列表数据 ===', employeeTaskList);
 }
-const employeeTaskStore = useEmployeeTaskStore();// 列表展示数据
+const employeeTaskStore = useEmployeeTaskStore(); // 列表展示数据
 // 这里一定要用storeTorefs,而不是ref // todo
 const { employeeTaskList } = storeToRefs(employeeTaskStore);
 
 // 获取创建成功的数据
-const isCreatedStore = useIsCreatedStore()
-const {isCreated} = storeToRefs(isCreatedStore)
+const isCreatedStore = useIsCreatedStore();
+const { isCreated } = storeToRefs(isCreatedStore);
 
 watch(isCreated, (newValue) => {
     if (newValue) {
@@ -114,12 +118,11 @@ const dialogFormVisible = ref(false);
 const formLabelWidth = '120px';
 // 储存选择的那条数据
 const chooseModifyId = ref(null);
-console.log('employeeTaskList任务描述 ===', employeeTaskList);
 
 const form = reactive({
     taskDescription: '', // 任务描述
     projectId: null, // 项目 ID
-    planFinishHour: 1, // 计划完成小
+    planFinishHour: null, // 计划完成小
     taskTypeId: null, // 任务类别 ID时数
     planFinishDate: '', // 计划完成日期
     applyAuditId: null, // 审批人ID
@@ -127,7 +130,7 @@ const form = reactive({
 });
 
 /********************************\
- * 修改内容
+ * 修改内容,弹出框，内容填充
 \********************************/
 function dialogFormVisibleFun(currentId) {
     dialogFormVisible.value = true;
@@ -145,8 +148,6 @@ function dialogFormVisibleFun(currentId) {
     const selectedItem = employeeTaskList.value.find(
         (item) => item.id === chooseModifyId.value,
     );
-
-    console.log('selectedItem ===', selectedItem);
 
     if (selectedItem) {
         form.taskDescription = selectedItem.taskDescription;
@@ -206,9 +207,40 @@ async function getAuditUserList() {
 }
 
 /********************************\
- * 点击弹出框的修改（确定）按钮
+ * 点击表格右侧的修改（确定）按钮
 \********************************/
 async function modify() {
+    // 验证小时数
+    const validateHoursInputResult = validateHoursInput(form.planFinishHour);
+    if (!validateHoursInputResult.isValid) {
+        ElMessage({
+            message: validateHoursInputResult.message,
+            type: 'error',
+        });
+        return;
+    }
+    // 验证输入日期
+    if (!form.planFinishDate) {
+        ElMessage({
+            message: '请选择计划完成日期',
+            type: 'error',
+        });
+        return;
+    }
+    // 任务描述
+    const validateDescriptionInputResult = validateDescriptionInput(
+        form.taskDescription,
+    );
+    if (!validateDescriptionInputResult.isValid) {
+        ElMessage({
+            message: validateDescriptionInputResult.message,
+            type: 'error',
+        });
+        return;
+    }
+    // 日期格式化
+    form.planFinishDate = getFormattedDate(form.planFinishDate);
+
     try {
         const response = await useUpdateTask.fetchUpdateTaskAction({
             taskDescription: form.taskDescription,
@@ -225,7 +257,7 @@ async function modify() {
             dialogFormVisible.value = false;
             // 提示新建完成
             ElMessage({
-                message: '修改任务成功',
+                message: '任务修改成功',
                 type: 'success',
             });
             getEmployeeTasList(); // 重新获取数据
@@ -241,7 +273,7 @@ async function modify() {
         // 取消弹出框
         dialogFormVisible.value = false;
         ElMessage({
-            message: '修改申请失败',
+            message: '任务修改失败',
             type: 'error',
         });
     }
@@ -272,7 +304,7 @@ async function deleteTaskFun() {
             showDeleteDialog.value = false;
             // 提示新建完成
             ElMessage({
-                message: '删除任务成功',
+                message: '任务删除成功',
                 type: 'success',
             });
             getEmployeeTasList(); // 重新获取数据
@@ -300,6 +332,14 @@ const xTable = ref(null);
 const oldValue = ref(null);
 // 单元格获得焦点时调用
 function handleCellActivated({ row, column }) {
+    // 调用参数
+    // 调用用户权限项目接口
+    getUserProjectList();
+    // 调用获取任务类型接口
+    getTaskTypeList();
+    // 调用审批人接口
+    getAuditUserList();
+
     prevValue.value = row.id;
     console.log('当前行 prevValue.value ===', prevValue.value);
 
@@ -313,6 +353,8 @@ function handleCellActivated({ row, column }) {
 }
 // 单元格失去焦点时调用
 function handleCellClosed({ row, column }) {
+    // console.log('row,column ===', row, column);
+
     if (column.property === 'taskDescription') {
         // 值没改变时，不需要进行修改
         if (oldValue.value !== row.taskDescription) {
@@ -431,6 +473,25 @@ async function singleUpdateAuditId(row) {
 
 // 任务描述单元格修改
 async function singleUpdateDescription(row) {
+    // 存储修改前的描述信息
+    const originalTaskDescription = row.taskDescription;
+    // 任务描述验证
+    const validateDescriptionInputResult = validateDescriptionInput(
+        row.taskDescription,
+    );
+    if (!validateDescriptionInputResult.isValid) {
+        ElMessage({
+            message: validateDescriptionInputResult.message,
+            type: 'error',
+        });
+        // 如果修改失败，重置任务描述为原始的任务描述
+        // todo 这里修改的数据就不应该拿页面中的状态来定义，应该使用的是pinia的数据来确定 20230919
+        // row.taskDescription = originalTaskDescription;
+        // 暂时的方法，再调用一次获取列表
+        getEmployeeTasList();
+
+        return;
+    }
     try {
         // console.log('项目ID已更改为:', row.taskDescription);
         // 如果需要，你可以在这里调用其他函数或更新其他数据
@@ -446,6 +507,8 @@ async function singleUpdateDescription(row) {
                 type: 'success',
             });
         } else {
+            // 如果修改失败，重置任务描述为原始的任务描述
+            row.taskDescription = originalTaskDescription;
             ElMessage({
                 message: response.message,
                 type: 'error',
@@ -455,14 +518,29 @@ async function singleUpdateDescription(row) {
         // xTable.value.clearActived();
     } catch (error) {
         console.log('error ===', error);
+        // 如果修改失败，重置任务描述为原始的任务描述
+        row.taskDescription = originalTaskDescription;
+        // 修改为空时，表格会显示为空，但我希望的是，表格还是原来的数据
         ElMessage({
             message: '修改任务描述失败',
+            type: 'error',
         });
     }
 }
 
 // 计划完成小时数单元格修改
 async function singleUpdatePlanFinishHour(row) {
+    // 验证小时数
+    const validateHoursInputResult = validateHoursInput(row.planFinishHour);
+    if (!validateHoursInputResult.isValid) {
+        ElMessage({
+            message: validateHoursInputResult.message,
+            type: 'error',
+        });
+        // 跟上面一致 todo 20230919
+        getEmployeeTasList();
+        return;
+    }
     try {
         // console.log('项目ID已更改为:', row.planFinishHour);
         // 如果需要，你可以在这里调用其他函数或更新其他数据
@@ -489,14 +567,33 @@ async function singleUpdatePlanFinishHour(row) {
         console.log('error ===', error);
         ElMessage({
             message: '修改计划完成小时数失败',
+            type: 'error',
         });
     }
 }
 
 // 计划完成日期单元格修改
+const singleUpdateFinishDate = ref('');
 async function singleUpdatePlanFinishDate(row) {
+    // todo 日历组件的统一，日期的选择问题 20230919
+    // todo 数据更新的方式是修改错误了，直接把之前存储的数据返回展示，而不是现在的重新获取
+
+    const selectedDay = row.planFinishDate;
+    // console.log('selectedDay ===', selectedDay);
+    const today = getFormattedDateTwo(new Date());
+    // console.log('today ===', today);
+    // todo 数据不变，不更改时，不需要更新的问题 20230919
+    if (selectedDay < today) {
+        getEmployeeTasList();
+        ElMessage({
+            message: `请选择大于${today}的计划完成日期`,
+            type: 'error',
+        });
+        return;
+    }
+
     try {
-        // console.log('项目ID已更改为:', row.planFinishDate);
+        console.log('选择的日期', singleUpdateFinishDate);
         // 如果需要，你可以在这里调用其他函数或更新其他数据
         const response =
             await singleUpdatePlanFinishDateStore.fetchSUPlanFinishDateAction({
@@ -505,11 +602,13 @@ async function singleUpdatePlanFinishDate(row) {
             });
 
         if (response && response.code === 200) {
+            // getEmployeeTasList();
             ElMessage({
                 message: '修改计划完成日期成功',
                 type: 'success',
             });
         } else {
+            getEmployeeTasList();
             ElMessage({
                 message: response.message,
                 type: 'error',
@@ -519,8 +618,10 @@ async function singleUpdatePlanFinishDate(row) {
         // xTable.value.clearActived();
     } catch (error) {
         console.log('error ===', error);
+        getEmployeeTasList();
         ElMessage({
             message: '修改计划完成日期失败',
+            type: 'error',
         });
     }
 }
@@ -561,6 +662,7 @@ async function singleUpdatePlanFinishDate(row) {
             border
             align="center"
             show-overflow
+            max-height="600px"
             :data="employeeTaskList"
             :column-config="{ resizable: true, useKey: 'field' }"
             :edit-config="{ trigger: 'click', mode: 'cell' }"
@@ -662,15 +764,25 @@ async function singleUpdatePlanFinishDate(row) {
                 width="140px"
             >
                 <template #default="{ row }">
-                    {{ formatDate(row.planFinishDate) }}
+                    {{ getFormattedDateTwo(row.planFinishDate) }}
                 </template>
+                <!-- todo 表单数据的更改都应该用的store中持久化的数据，
+                    而不是ref中的数据 这里v-module绑定的数据就有问题 20230919 -->
                 <template #edit="{ row }">
                     <vxe-input
                         v-model="row.planFinishDate"
                         type="date"
                         placeholder="请选择计划完成日期"
                         transfer
+                        :min-date="minDate"
                     ></vxe-input>
+                    <!-- <el-date-picker
+                            v-model="form.planFinishDate"
+                            type="date"
+                            placeholder="选择计划完成日期"
+                            style="width: 100%"
+                            :disabledDate="disabledPreviousDates"
+                        /> -->
                 </template>
             </vxe-column>
             <!-- 审批人 -->
@@ -790,6 +902,7 @@ async function singleUpdatePlanFinishDate(row) {
                         type="date"
                         placeholder="选择计划完成日期"
                         style="width: 100%"
+                        :disabledDate="disabledPreviousDates"
                     />
                 </el-form-item>
                 <!-- 任务描述 -->
@@ -899,3 +1012,4 @@ async function singleUpdatePlanFinishDate(row) {
     }
 }
 </style>
+@/utils/validate/validateHoursInput

@@ -2,7 +2,7 @@
  * @Author: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
  * @Date: 2023-08-31 10:49:42
  * @LastEditors: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
- * @LastEditTime: 2023-09-13 17:32:05
+ * @LastEditTime: 2023-09-18 14:06:43
  * @FilePath: \taskApplication\src\layout\NavBar\NavBar.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -40,7 +40,7 @@ async function logoutbtn() {
             localStorage.removeItem('authorityList');
 
             ElMessage({
-                message: '退出登录成功',
+                message: '已正常退出',
                 type: 'success',
             });
 

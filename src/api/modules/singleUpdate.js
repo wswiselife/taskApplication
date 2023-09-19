@@ -1,3 +1,11 @@
+/*
+ * @Author: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
+ * @Date: 2023-09-13 10:14:04
+ * @LastEditors: ouyang 12731841+OuYangChilam@user.noreply.gitee.com
+ * @LastEditTime: 2023-09-15 15:52:41
+ * @FilePath: \taskApplication\src\api\modules\singleUpdate.js
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ */
 import { request } from '../index';
 
 // 单独修改项目名称
@@ -63,7 +71,7 @@ export const sUpdatePlanFinishHour = (data) => {
 // 单独修改完成日期
 export const sUpdatePlanFinishDate = (data) => {
     // 传数据的时候的格式解构要注意 // todo
-    // console.log('axios的data ===', data);
+    console.log('axios的data ===', data);
     return request.post('/TaskApply/UpdateTaskApplyByPlanFinishDate', null, {
         params: {
             pPlanFinishDate: data.pPlanFinishDate,

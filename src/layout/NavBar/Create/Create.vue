@@ -14,13 +14,19 @@ const userProjectList = useUserProjectListStore();
 const useTaskTypeList = useTaskTypeListStore();
 const useAuditTypeList = useAuditUserListStore();
 import { ElMessage } from 'element-plus';
-// 时间格式化
-import moment from 'moment';
+
 // 创建数据共享
 import { useIsCreatedStore } from '@/store/public';
 // import { storeToRefs } from 'pinia';
 const isCreateStore = useIsCreatedStore();
 // const { isCreate } = storeToRefs(isCreateStore);
+import { validateHoursInput } from '@/utils/validate/validateHoursInput';
+// 日期选择限制
+import { disabledPreviousDates } from '@/utils/limit/limitDateSelect';
+// 时间格式化
+import { getFormattedDate } from '@/utils/format/formatDate';
+// 任务描述验证
+import { validateDescriptionInput } from '@/utils/validate/validateDescript';
 
 /********************************\
  * 表单数据定义
@@ -108,24 +114,9 @@ async function getAuditUserList() {
 }
 
 /********************************\
- * 完成日期格式化
-\********************************/
-function getFormattedDate(date) {
-    return moment(date).format('YYYY-MM-DD HH:mm:ss');
-}
-/********************************\
  * 对话框确认操作
 \********************************/
-
 async function createTaskBtn() {
-    // 任务描述
-    if (!form.taskDescription) {
-        ElMessage({
-            message: '请填写任务描述信息',
-            type: 'error',
-        });
-        return;
-    }
     // 项目id
     if (!form.projectId) {
         ElMessage({
@@ -142,22 +133,6 @@ async function createTaskBtn() {
         });
         return;
     }
-    // 完成小时数
-    if (!form.planFinishHour) {
-        ElMessage({
-            message: '请填写完成小时数',
-            type: 'error',
-        });
-        return;
-    }
-    // 完成日期
-    if (!form.planFinishDate) {
-        ElMessage({
-            message: '请选择完成日期',
-            type: 'error',
-        });
-        return;
-    }
     // 审批人
     if (!form.applyAuditId) {
         ElMessage({
@@ -166,6 +141,35 @@ async function createTaskBtn() {
         });
         return;
     }
+    // validateHoursInput 验证计划完成小时数
+    const validateHoursInputResult = validateHoursInput(form.planFinishHour);
+    if (!validateHoursInputResult.isValid) {
+        ElMessage({
+            message: validateHoursInputResult.message,
+            type: 'error',
+        });
+        return;
+    }
+    // 完成日期
+    if (!form.planFinishDate) {
+        ElMessage({
+            message: '请选择计划完成日期',
+            type: 'error',
+        });
+        return;
+    }
+    // 任务描述
+    const validateDescriptionInputResult = validateDescriptionInput(
+        form.taskDescription,
+    );
+    if (!validateDescriptionInputResult.isValid) {
+        ElMessage({
+            message: validateDescriptionInputResult.message,
+            type: 'error',
+        });
+        return;
+    }
+    // console.log('form.planFinishDate ===', form.planFinishDate);
 
     // 完成日期格式化
     form.planFinishDate = getFormattedDate(form.planFinishDate);
@@ -180,7 +184,7 @@ async function createTaskBtn() {
             isCreateStore.setIsCreated(true);
             // 提示新建完成
             ElMessage({
-                message: '新建任务成功',
+                message: '任务新增成功',
                 type: 'success',
             });
             // 清除所有数据
@@ -197,7 +201,7 @@ async function createTaskBtn() {
         // 取消弹出框
         dialogFormVisible.value = false;
         ElMessage({
-            message: '新建任务出错',
+            message: '任务新增失败',
             type: 'error',
         });
     }
@@ -206,10 +210,10 @@ async function createTaskBtn() {
 
 <template>
     <div class="create_container">
-        <el-button @click="dialogFormVisibleFun" class="create">创建</el-button>
+        <el-button @click="dialogFormVisibleFun" class="create">新增</el-button>
 
         <!-- 弹出框 -->
-        <el-dialog v-model="dialogFormVisible" title="新建任务" modal="true">
+        <el-dialog v-model="dialogFormVisible" title="任务新增" modal="true">
             <el-form :model="form">
                 <!-- 项目ID-选择框 -->
                 <el-form-item
@@ -265,7 +269,6 @@ async function createTaskBtn() {
                         />
                     </el-select>
                 </el-form-item>
-
                 <!-- 计划完成小时数 -->
                 <el-form-item
                     label="计划完成小时数"
@@ -274,7 +277,7 @@ async function createTaskBtn() {
                 >
                     <el-input
                         v-model="form.planFinishHour"
-                        placeholder="请输入计划完成小时数"
+                        placeholder="请填写计划完成小时数"
                     />
                 </el-form-item>
                 <!-- 计划完成日期 -->
@@ -287,9 +290,9 @@ async function createTaskBtn() {
                         type="date"
                         placeholder="选择计划完成日期"
                         style="width: 100%"
+                        :disabledDate="disabledPreviousDates"
                     />
                 </el-form-item>
-
                 <!-- 任务描述 -->
                 <el-form-item
                     label="任务描述"
@@ -299,7 +302,7 @@ async function createTaskBtn() {
                     <el-input
                         type="textarea"
                         v-model="form.taskDescription"
-                        placeholder="请输入任务描述"
+                        placeholder="请填写任务描述"
                     />
                 </el-form-item>
             </el-form>
@@ -372,3 +375,4 @@ async function createTaskBtn() {
     }
 }
 </style>
+@/utils/validate/limitDateSelect
