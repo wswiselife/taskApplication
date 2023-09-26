@@ -16,7 +16,7 @@ export default defineConfig({
     // server: {
     //     proxy: {
     //         '/jsy': {
-    //             target: 'http://192.168.1.83:5225',
+    //             target: 'http://localhost:5000/jsy',
     //             changeOrigin: true,
     //         },
     //     },

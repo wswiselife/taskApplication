@@ -22,8 +22,8 @@ import zhCn from 'element-plus/dist/locale/zh-cn.mjs';
 import * as ElementPlusIconsVue from '@element-plus/icons-vue';
 // pinia
 import { pinia } from './store';
-// 引入进度条样式
-import 'nprogress/nprogress.css';
+// 引入进度条样式（暂停）
+// import 'nprogress/nprogress.css';
 // 引入vxe-table
 import VXETable from 'vxe-table';
 import 'vxe-table/lib/style.css';

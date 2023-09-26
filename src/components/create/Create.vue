@@ -40,6 +40,7 @@ const form = reactive({
     applyAuditId: null, // 审批人ID
 });
 
+// 清空表单内容
 function resetForm() {
     form.taskDescription = '';
     form.projectId = null;
@@ -201,7 +202,7 @@ async function createTaskBtn() {
         // 取消弹出框
         dialogFormVisible.value = false;
         ElMessage({
-            message: '任务新增失败',
+            message: `任务新增失败，${error}`,
             type: 'error',
         });
     }
@@ -328,7 +329,7 @@ async function createTaskBtn() {
 </template>
 
 <style scoped lang="scss">
-@import '../../../assets/css/variables.scss';
+@import '../../assets/css/variables.scss';
 .el-button--text {
     margin-right: 15px;
 }
@@ -364,15 +365,24 @@ async function createTaskBtn() {
 </style>
 
 <style scoped lang="scss">
-@import '../../../assets/css/variables.scss';
+@import '../../assets/css/variables.scss';
 .create_container {
     .create {
-        background-color: $color-primary;
-        color: $color-wfont;
+        width: 80px;
+        height: 32px;
+        background: #1768e4;
+        border-radius: 4px;
+        border: none;
+        font-size: 12px;
+        font-family: Microsoft YaHei;
+        font-weight: 400;
+        color: #ffffff;
+        margin-top: 16px;
+        margin-left: 40px;
+        margin-bottom: 11px;
     }
     .create:hover {
-        color: $color-bfont;
+        background: #2b8aec;
     }
 }
 </style>
-@/utils/validate/limitDateSelect

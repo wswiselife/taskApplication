@@ -36,7 +36,7 @@ const form = reactive({
 });
 
 const loginFormRef = ref(null);
-async function loginbtn () {
+async function loginbtn() {
     if (!form.account && !form.password) {
         ElMessage({
             message: '账号和密码不能为空',
@@ -54,7 +54,7 @@ async function loginbtn () {
     if (!form.password) {
         ElMessage({
             message: '密码不能为空',
-            type:'error'
+            type: 'error',
         });
         return;
     }
@@ -119,70 +119,76 @@ function showPwd() {
 
 <template>
     <div class="login_container">
-        <!-- :rules="rules" -->
-        <el-form
-            :model="form"
-            class="login_form"
-            ref="loginFormRef"
-            @keyup.enter="loginbtn"
-        >
-            <div class="title_container">
-                <h3 class="title">任务申请</h3>
-            </div>
-            <el-form-item class="account" prop="account">
-                <el-input
-                    v-model="form.account"
-                    class="form_input"
-                    type="text"
-                    placeholder="请输入账号"
-                >
-                    <!-- 左侧小icon -->
-                    <template #prefix>
-                        <span class="svg_container">
-                            <!-- <svg-icon icon-class="user" /> -->
-                            <img src="../../assets/icon/user.svg" alt="" />
-                        </span>
-                    </template>
-                </el-input>
-            </el-form-item>
-            <el-form-item class="password" prop="password">
-                <el-input
-                    v-model="form.password"
-                    class="form_input"
-                    :type="passwordType"
-                    placeholder="请输入密码"
-                >
-                    <!-- 左侧小icon -->
-                    <template #prefix>
-                        <span class="svg_container">
-                            <!-- <svg-icon icon-class="user" /> -->
-                            <img src="../../assets/icon/password.svg" alt="" />
-                        </span>
-                    </template>
-                    <!-- 右侧眼睛 -->
-                    <template #suffix>
-                        <span class="show_pwd" @click="showPwd">
-                            <!-- <img src="../../assets/icon/eye.svg" alt="" /> -->
-                            <img
-                                v-if="isPwdShown"
-                                src="../../assets/icon/eye-open.svg"
-                                alt="Hide Password"
-                            />
-                            <img
-                                v-else
-                                src="../../assets/icon/eye.svg"
-                                alt="Show Password"
-                            />
-                        </span>
-                    </template>
-                </el-input>
-            </el-form-item>
+        <!-- :rules="rules" // todo 如果使用的是elm内置的校验 -->
+        <div class="form-container">
+            <!-- title -->
+            <div class="title">任务申请</div>
 
-            <el-button @click="loginbtn" class="login_btn">
-                <span class="letter">登</span>
-                <span class="letter">录</span>
-            </el-button>
-        </el-form>
+            <el-form
+                :model="form"
+                class="login_form"
+                ref="loginFormRef"
+                @keyup.enter="loginbtn"
+            >
+                <el-form-item class="account" prop="account">
+                    <el-input
+                        v-model="form.account"
+                        class="form_input"
+                        type="text"
+                        placeholder="请输入账号"
+                    >
+                        <!-- 左侧小icon -->
+                        <template #prefix>
+                            <span class="svg_container">
+                                <!-- <svg-icon icon-class="user" /> -->
+                                <img src="../../assets/img/user.png" alt="" />
+                            </span>
+                        </template>
+                    </el-input>
+                </el-form-item>
+                <el-form-item class="password" prop="password">
+                    <el-input
+                        v-model="form.password"
+                        class="form_input"
+                        :type="passwordType"
+                        placeholder="请输入密码"
+                    >
+                        <!-- 左侧小icon -->
+                        <template #prefix>
+                            <span class="svg_container">
+                                <!-- <svg-icon icon-class="user" /> -->
+                                <img
+                                    src="../../assets/img/password.png"
+                                    alt=""
+                                />
+                            </span>
+                        </template>
+                        <!-- 右侧眼睛 -->
+                        <template #suffix>
+                            <span class="show_pwd" @click="showPwd">
+                                <!-- <img src="../../assets/icon/eye.svg" alt="" /> -->
+                                <img
+                                    v-if="isPwdShown"
+                                    src="../../assets/img/eye-hide.png"
+                                />
+                                <img
+                                    v-else
+                                    src="../../assets/img/eye-open.png"
+                                />
+                            </span>
+                        </template>
+                    </el-input>
+                </el-form-item>
+            </el-form>
+
+            <div class="btn-container">
+                <el-button @click="loginbtn" class="login_btn">
+                    <!-- <span class="letter">登</span>
+                    <span class="letter">录</span> -->
+                    登录
+                </el-button>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -194,12 +200,17 @@ function showPwd() {
 }
 
 .el-input input {
-    padding: 12px 10px 12px 10px;
+    padding: 2px 0 2px 0;
+}
+
+.el-input__inner::placeholder {
+    color: #aaa;
+    font-size: 10px;
 }
 
 .el-input__wrapper {
-    background-color: $color-four;
-    padding: 10px 12px;
+    background-color: rgba(255, 255, 255, 0.4);
+    // padding: 10px 16px;
 }
 
 .el-button {
@@ -224,44 +235,62 @@ function showPwd() {
 .login_container {
     height: 100%;
     width: 100%;
-    background-color: $color-four;
-    overflow: hidden;
+    // background-color: $color-four;
+    // overflow: hidden;
+    background-image: url('/src/assets/img/login-bgimg.png');
+    background-size: 100% 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 
-    .login_form {
-        width: 520px;
-        max-width: 520px;
-        padding: 160px 35px 0;
-        margin: 0 auto;
-        overflow: hidden;
-    }
-
-    .account,
-    .password {
-        margin-bottom: 25px;
+    .form-container {
+        width: 266px;
+        height: 280px;
+        background-color: rgba($color: #fff, $alpha: 0.5);
+        border-radius: 10px;
     }
 
     // title
-    .title_container {
-        .title {
-            color: $color-bfont;
-            font-size: 26px;
-            margin: 0 auto 40px auto;
-            text-align: center;
-            font-weight: bold;
-        }
+
+    .title {
+        padding: 39px 0 32px 0;
+        // width: 127px;
+        font-size: 22px;
+        font-family: Microsoft YaHei;
+        color: #267aea;
+        text-align: center;
+        font-weight: bold;
+    }
+
+    // .login_form {
+    //     width: 360px;
+
+    //     // overflow: hidden;
+    // }
+
+    .account,
+    .password {
+        width: 212px;
+        height: 36px;
+        margin: 0 auto;
+        margin-bottom: 16px;
+    }
+
+    .password {
+        margin-bottom: 24px;
     }
 
     .svg_container {
         display: inline-block;
         vertical-align: middle;
-        width: 16px;
-        height: 16px;
-        margin-right: 8px;
-        line-height: 16px;
+        width: 10px;
+        height: 12px;
+        margin-right: 4px;
+        line-height: 12px;
 
         img {
-            width: 16px;
-            height: 16px;
+            width: 10px;
+            height: 12px;
         }
     }
 
@@ -269,23 +298,32 @@ function showPwd() {
     .show_pwd {
         display: inline-block;
         vertical-align: middle;
-        width: 16px;
-        height: 16px;
+        width: 12px;
+        height: 8px;
         margin-left: 8px; // 注意这里是 margin-left
-        line-height: 16px;
+        line-height: 8px;
         cursor: pointer;
 
         img {
-            width: 16px;
+            width: 12px;
             // height: 16px;
         }
     }
 
+    .btn-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
     .login_btn {
-        width: 100%;
-        background: $color-primary;
-        border-color: none;
-        color: $color-wfont;
+        width: 212px;
+        height: 32px;
+        background: linear-gradient(90deg, #72dcff 0%, #939bff 100%);
+        border-radius: 4px;
+        color: #fff;
+        transition: 0.5s ease-in-out;
+        font-size: 12px;
 
         .letter {
             display: block;
@@ -296,7 +334,7 @@ function showPwd() {
     }
 
     .login_btn:hover {
-        color: $color-bfont;
+        background: linear-gradient(90deg, #72c0ff 0%, #9485ff 100%);
     }
 }
 </style>

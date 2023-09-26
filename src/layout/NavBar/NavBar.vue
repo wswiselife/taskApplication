@@ -18,7 +18,7 @@
 import { useRouter } from 'vue-router';
 import { userLogout } from '@/api/modules/user';
 
-import Create from './create/Create.vue';
+// import Create from './create/Create.vue';
 import { ElMessage } from 'element-plus';
 import { ref, computed } from 'vue';
 
@@ -81,10 +81,9 @@ const firstLetter = computed(() => {
             <!-- logo -->
             <div class="logo">
                 <img src="../../assets/img/logo.png" alt="logo" />
-                <span class="title">锦上云</span>
             </div>
             <!-- 创建按钮 -->
-            <create></create>
+            <!-- <create></create> -->
         </div>
 
         <div class="navbar_right">
@@ -93,7 +92,7 @@ const firstLetter = computed(() => {
 
             <!-- 头像 -->
             <!-- <span class="username">{{ username }}</span> -->
-            <span class="username_first_letter">{{ firstLetter }}</span>
+            <div class="username_first_letter">{{ firstLetter }}</div>
             <!-- todo -->
         </div>
     </div>
@@ -103,31 +102,22 @@ const firstLetter = computed(() => {
 @import '../../assets/css/variables.scss';
 .sidebar_container {
     width: 100%;
+    height: 70px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    height: 50px;
 
     .navbar_left {
         display: flex;
         justify-content: flex-start;
         flex-direction: center;
         align-items: center;
-        gap: 20px;
         height: 100%;
-        margin-left: 25px;
+        margin-left: 23px;
     }
 
     .logo {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 8px;
-
-        .title {
-            font-size: 16px;
-            color: $color-bfont;
-        }
+        height: 27px;
     }
 
     .navbar_right {
@@ -135,32 +125,41 @@ const firstLetter = computed(() => {
         justify-content: flex-end;
         flex-direction: center;
         align-items: center;
-        gap: 20px;
         height: 100%;
-        margin-right: 25px;
+        gap: 26px;
+        margin-right: 49px;
     }
 
     .logout {
-        background-color: $color-primary;
-        color: $color-wfont;
+        width: 104px;
+        height: 42px;
+        background: #edf0ff;
+        border-radius: 4px;
+        border: none;
+        color: #1768e4;
+        font-size: 16px;
+        font-weight: 400;
+        font-family: Microsoft YaHei;
     }
 
     .logout:hover {
-        color: $color-bfont;
-    }
-
-    .username {
-        color: $color-bfont;
-        margin-right: 20px;
+        background: #1768e4;
+        border-radius: 4px;
+        font-weight: 400;
+        color: #ffffff;
     }
 
     .username_first_letter {
+        font-family: Microsoft YaHei;
         font-size: 24px;
-        font-weight: bold;
-        color: $color-primary;
-        padding: 5px 12px;
-        border: 1px solid $color-primary;
-        border-radius: 10px;
+        text-align: center;
+        line-height: 35px;
+        font-weight: 400;
+        width: 40px;
+        height: 40px;
+        color: #fff;
+        border-radius: 50%;
+        background-color: #1768e4;
     }
 }
 </style>

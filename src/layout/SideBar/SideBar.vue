@@ -89,9 +89,14 @@ const isApprovalRouteActive = computed(() => {
 <style scoped lang="scss">
 @import '../../assets/css/variables.scss';
 
+.el-menu {
+    border-right: none;
+}
+
 .el-menu-item {
-    background-color: #f0f0f0;
-    color: $color-bfont;
+    height: 52px;
+    border-left: none;
+    color: #333;
 }
 
 // 路由被选中时
@@ -102,7 +107,7 @@ const isApprovalRouteActive = computed(() => {
 
 // 路由被选中时
 .active-route {
-    background-color: $color-primary;
-    color: $color-bfont;
+    background: linear-gradient(90deg, #ffffff 0%, #f3f7ff 100%);
+    border-right: 3px solid #1768e4;
 }
 </style>

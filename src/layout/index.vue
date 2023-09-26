@@ -48,31 +48,32 @@ import sidebar from './sideBar/SideBar.vue';
 @import '../assets/css/variables.scss';
 
 .layout_container {
-    height: 100vh;
-    width: 100vw;
-    background-color: $color-four;
+    height: 100%;
+    width: 100%;
+    // background-color: $color-four;
 
     .navbar {
         width: 100%;
-        height: 50px;
-        border-bottom: 1px solid $color-border;
+        height: 70px;
+        background: #ffffff;
+        box-shadow: 0px 1px 7px 0px rgba(123, 142, 223, 0.1);
     }
 
     .sidebar_appmain_container {
-        height: calc(100vh - 50px);
+        height: calc(100vh - 70px);
         display: flex;
         justify-content: flex-start;
     }
 
     .sidebar {
-        width: 220px;
-        min-width: 150px;
         height: 100%;
-        border-right: 1px solid $color-border;
+        width: 160px;
+        background: #ffffff;
     }
 
     .app_main {
-        margin: 25px auto;
+        width: calc(100vw - 160px);
+        background: #f3f7ff;
     }
 }
 </style>

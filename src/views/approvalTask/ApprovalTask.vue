@@ -126,7 +126,7 @@ async function agreeFun() {
         console.log('error ===', error);
         showAgreeDialog.value = false;
         ElMessage({
-            message: '任务审批失败',
+            message: `任务审批失败。${error}`,
             type: 'error',
         });
     }
@@ -142,130 +142,145 @@ async function agreeFun() {
         <!--  暂时不启动编辑功能   :edit-config="{ trigger: 'dblclick', mode: 'cell' }" -->
         <!-- projectList、taskTypeList、auditUserList也没获取 -->
         <!-- todo -->
-        <vxe-table
-            border
-            align="center"
-            show-overflow
-            max-height="600px"
-            :data="auditTaskList"
-            :column-config="{ resizable: true, useKey: 'field' }"
-            :row-config="{ useKey: 'id' }"
-            round
-            @edit-actived="handleCellActivated"
-            @edit-closed="handleCellClosed"
-        >
-            <!-- 选择框 -->
-            <!-- <vxe-column type="checkbox" width="60"></vxe-column> -->
-            <!-- 预警ID -->
-            <!-- <vxe-column field="id" title="ID" width="50px"></vxe-column> -->
-            <!-- 项目名称 -->
-            <vxe-column
-                field="projectName"
-                title="项目名称"
-                :edit-render="{}"
-                width="120px"
-            >
-                <template #default="{ row }">
-                    <span>{{ formatProjectName(row.projectId) }}</span>
-                </template>
-                <template #edit="{ row }">
-                    <vxe-select v-model="row.projectId" type="text" transfer>
-                        <vxe-option
-                            v-for="project in projectList"
-                            :key="project.id"
-                            :label="project.name"
-                            :value="project.id"
-                        />
-                    </vxe-select>
-                </template>
-            </vxe-column>
 
-            <!-- 任务类型 -->
-            <vxe-column
-                field="taskTypeName"
-                title="任务类型"
-                :edit-render="{}"
-                width="100px"
+        <div class="approval-box">
+            <vxe-table
+                border
+                align="center"
+                show-overflow
+                max-height="563px"
+                :data="auditTaskList"
+                :column-config="{ resizable: true, useKey: 'field' }"
+                :row-config="{ useKey: 'id' }"
+                round
+                @edit-actived="handleCellActivated"
+                @edit-closed="handleCellClosed"
+                class="table"
             >
-                <template #default="{ row }">
-                    {{ formatTaskType(row.taskTypeId) }}
-                </template>
-                <template #edit="{ row }">
-                    <vxe-select v-model="row.taskTypeId" type="text" transfer>
-                        <vxe-option
-                            v-for="tasktype in taskTypeList"
-                            :key="tasktype.id"
-                            :label="tasktype.name"
-                            :value="tasktype.id"
-                        ></vxe-option>
-                    </vxe-select>
-                </template>
-            </vxe-column>
-            <!-- 项目描述 -->
-            <vxe-column
-                field="taskDescription"
-                title="任务描述"
-                :edit-render="{}"
-                width="250px"
-            >
-                <template #edit="{ row }">
-                    <vxe-input
-                        v-model="row.taskDescription"
-                        type="text"
-                    ></vxe-input>
-                </template>
-            </vxe-column>
+                <!-- 选择框 -->
+                <!-- <vxe-column type="checkbox" width="60"></vxe-column> -->
+                <!-- 预警ID -->
+                <!-- <vxe-column field="id" title="ID" width="50px"></vxe-column> -->
+                <!-- 项目名称 -->
+                <vxe-column
+                    field="projectName"
+                    title="项目名称"
+                    :edit-render="{}"
+                    width="120px"
+                >
+                    <template #default="{ row }">
+                        <span>{{ formatProjectName(row.projectId) }}</span>
+                    </template>
+                    <template #edit="{ row }">
+                        <vxe-select
+                            v-model="row.projectId"
+                            type="text"
+                            transfer
+                        >
+                            <vxe-option
+                                v-for="project in projectList"
+                                :key="project.id"
+                                :label="project.name"
+                                :value="project.id"
+                            />
+                        </vxe-select>
+                    </template>
+                </vxe-column>
 
-            <!-- 计划完成小时数 -->
-            <vxe-column
-                field="planFinishHour"
-                title="计划完成小时数"
-                :edit-render="{}"
-                width="140px"
-            >
-                <template #edit="{ row }">
-                    <vxe-input
-                        v-model="row.planFinishHour"
-                        type="text"
-                    ></vxe-input>
-                </template>
-            </vxe-column>
-            <!-- 计划完成日期 -->
-            <vxe-column
-                field="planFinishDate"
-                title="计划完成日期"
-                :edit-render="{}"
-                width="140px"
-            >
-                <template #default="{ row }">
-                    {{ getFormattedDateTwo(row.planFinishDate) }}
-                </template>
-                <template #edit="{ row }">
-                    <vxe-input
-                        v-model="row.planFinishDate"
-                        type="text"
-                    ></vxe-input>
-                </template>
-            </vxe-column>
-            <!-- 申请人 -->
-            <vxe-column
-                field="employeeName"
-                title="申请人"
-                :edit-render="{}"
-                width="100px"
-            ></vxe-column>
-            <!-- 操作 -->
-            <vxe-column field="operate" title="操作" width="180px">
-                <template #default="{ row }">
-                    <button @click="showAgreeDialogFun(row.id)" class="agree">
-                        同意
-                    </button>
-                </template>
-            </vxe-column>
-        </vxe-table>
+                <!-- 任务类型 -->
+                <vxe-column
+                    field="taskTypeName"
+                    title="任务类型"
+                    :edit-render="{}"
+                    width="100px"
+                >
+                    <template #default="{ row }">
+                        {{ formatTaskType(row.taskTypeId) }}
+                    </template>
+                    <template #edit="{ row }">
+                        <vxe-select
+                            v-model="row.taskTypeId"
+                            type="text"
+                            transfer
+                        >
+                            <vxe-option
+                                v-for="tasktype in taskTypeList"
+                                :key="tasktype.id"
+                                :label="tasktype.name"
+                                :value="tasktype.id"
+                            ></vxe-option>
+                        </vxe-select>
+                    </template>
+                </vxe-column>
+                <!-- 项目描述 -->
+                <vxe-column
+                    field="taskDescription"
+                    title="任务描述"
+                    :edit-render="{}"
+                    min-width="250px"
+                >
+                    <template #edit="{ row }">
+                        <vxe-input
+                            v-model="row.taskDescription"
+                            type="text"
+                        ></vxe-input>
+                    </template>
+                </vxe-column>
 
-        <!-- 弹出点数 -->
-        <el-dialog v-model="showAgreeDialog" title="同意申请" modal="true">
+                <!-- 计划完成小时数 -->
+                <vxe-column
+                    field="planFinishHour"
+                    title="计划完成小时数"
+                    :edit-render="{}"
+                    width="140px"
+                >
+                    <template #edit="{ row }">
+                        <vxe-input
+                            v-model="row.planFinishHour"
+                            type="text"
+                        ></vxe-input>
+                    </template>
+                </vxe-column>
+                <!-- 计划完成日期 -->
+                <vxe-column
+                    field="planFinishDate"
+                    title="计划完成日期"
+                    :edit-render="{}"
+                    width="140px"
+                >
+                    <template #default="{ row }">
+                        {{ getFormattedDateTwo(row.planFinishDate) }}
+                    </template>
+                    <template #edit="{ row }">
+                        <vxe-input
+                            v-model="row.planFinishDate"
+                            type="text"
+                        ></vxe-input>
+                    </template>
+                </vxe-column>
+                <!-- 申请人 -->
+                <vxe-column
+                    field="employeeName"
+                    title="申请人"
+                    :edit-render="{}"
+                    width="100px"
+                ></vxe-column>
+                <!-- 操作 -->
+                <vxe-column field="operate" title="操作" width="180px">
+                    <template #default="{ row }">
+                        <button
+                            @click="showAgreeDialogFun(row.id)"
+                            class="agree"
+                        >
+                            同意
+                        </button>
+                    </template>
+                </vxe-column>
+            </vxe-table>
+        </div>
+
+        <!-- 申请审批 -->
+        <el-dialog v-model="showAgreeDialog" title="申请审批" modal="true">
             <el-form :model="form">
                 <!-- 任务点数 -->
                 <el-form-item label="任务点数" prop="point" :label-width="120">
@@ -315,17 +330,34 @@ async function agreeFun() {
 <style scoped lang="scss">
 @import '../../assets/css/variables.scss';
 .approval_container {
+    .approval-box {
+        margin-top: 15px;
+        padding-bottom: 15px;
+        margin-inline: 16px;
+        background-color: #fff;
+        border-radius: 2px;
+        padding-top: 16px;
+    }
+    .table {
+        margin: 0px 21px 10px 21px;
+    }
+
     .agree {
-        padding: 5px 8px;
-        background-color: #f0f0f0;
-        // border: 1px solid #ccc;
+        width: 53px;
+        height: 27px;
+        background: #ecf1ff;
         border: none;
-        border-radius: 5px;
+        border-radius: 2px;
+        font-size: 12px;
+        font-family: Microsoft YaHei;
+        font-weight: 400;
+        color: #1768e4;
     }
 
     .agree:hover {
-        color: $color-bfont;
-        background-color: #ccc;
+        color: #ffffff;
+        background: #1768e4;
+        cursor: pointer;
     }
 
     .el-button.btn-cancel {

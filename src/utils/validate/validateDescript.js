@@ -3,7 +3,7 @@ export const validateDescriptionInput = (description) => {
     if (!description) {
         return {
             isValid: false,
-            message: '任务描述不能为空',
+            message: '请填写任务描述',
         };
     }
 
