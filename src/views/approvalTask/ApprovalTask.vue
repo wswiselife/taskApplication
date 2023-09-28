@@ -7,12 +7,17 @@
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AEmport
 -->
 <script setup>
-import { useAuditTaskStore, useAgreeTaskStore } from '@/store/modules/task';
+import {
+    useAuditTaskStore,
+    useAgreeTaskStore,
+    useUserProjectListStore,
+    useTaskTypeListStore,
+} from '@/store/modules/task';
 import { storeToRefs } from 'pinia';
 import { ref, reactive, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { getFormattedDateTwo } from '@/utils/format/formatDate';
-import { formatProjectName, formatTaskType } from '@/assets/data/vxeColumnData';
+// import { formatProjectName, formatTaskType } from '@/assets/data/vxeColumnData';
 // import { disabledPreviousDates } from '@/utils/limitDateSelect';
 import { disabledPreviousDates } from '@/utils/limit/limitDateSelect';
 // 小时数校验
@@ -24,14 +29,95 @@ import { validatePoint } from '@/utils/validate/validatePoint';
 \********************************/
 onMounted(() => {
     getAuditUserData();
+    // 调用用户权限项目接口
+    getUserProjectList();
+    // 调用获取任务类型接口
+    getTaskTypeList();
+    // 调用审批人接口
+    // getAuditUserList();
 });
+
+const userProjectList = useUserProjectListStore();
+const useTaskTypeList = useTaskTypeListStore();
+
+// todo 这里其实是获取申请人的用户的权限，现在可以暂时这么做，但是当表格的数据需要修改的时候，
+// 我们就要真正的获取申请人的权限，然后做映射，在表格中显示对应的项目名称、任务类型或申请人
+// 申请人可以直接使用
+/********************************\
+ * 获取用户有权限的项目
+\********************************/
+const projectList = ref([]);
+const projectNameMap = ref({}); // 记录映射关系
+async function getUserProjectList() {
+    const response = await userProjectList.fetchUserProjectListAction();
+    // console.log('项目idresponse ===', response);
+    if (response && response.code === 200) {
+        projectList.value = response.result;
+        // 根据 projectList 创建 projectNameMap
+        projectNameMap.value = response.result.reduce((map, project) => {
+            map[project.id] = project.name;
+            return map;
+        }, {});
+    } else {
+        ElMessage({
+            message: response.message,
+            type: 'error',
+        });
+    }
+}
+
+/********************************\
+ * 获取任务类别ID
+\********************************/
+const taskTypeList = ref([]);
+const taskTypeMap = ref({});
+async function getTaskTypeList() {
+    const response = await useTaskTypeList.fetchTaskTypeListAction();
+    // console.log('任务类型response ===', response);
+    if (response && response.code === 200) {
+        taskTypeList.value = response.result;
+        // 根据 taskTypeList 创建 taskTypeMap
+        taskTypeMap.value = response.result.reduce((map, taskType) => {
+            map[taskType.id] = taskType.name;
+            return map;
+        }, {});
+    } else {
+        ElMessage({
+            message: '获取任务类型失败',
+            type: 'error',
+        });
+    }
+}
+
+/********************************\
+ * 获取申请人
+\********************************/
+// const auditUserList = ref([]);
+// const auditUserMap = ref({});
+// async function getAuditUserList() {
+//     const response = await useAuditTypeList.fetchAuditUserListAction();
+//     // console.log('审批人response ===', response);
+//     if (response && response.code === 200) {
+//         auditUserList.value = response.result;
+//         // 根据 auditUserList 创建 auditUserMap
+//         auditUserMap.value = response.result.reduce((map, auditUser) => {
+//             map[auditUser.id] = auditUser.nameEN;
+//             return map;
+//         }, {});
+//     } else {
+//         ElMessage({
+//             message: '获取审批人失败',
+//             type: 'error',
+//         });
+//     }
+// }
 
 /********************************\
  * 获取审批列表接口
 \********************************/
 function getAuditUserData() {
     useAuditTaskList.fetchAuditTaskAction();
-    console.log('任务审批 auditTaskList ===', auditTaskList);
+    // console.log('任务审批 auditTaskList ===', auditTaskList);
 }
 const useAuditTaskList = useAuditTaskStore();
 const { auditTaskList } = storeToRefs(useAuditTaskList);
@@ -146,7 +232,7 @@ async function agreeFun() {
         <div class="approval-box">
             <vxe-table
                 border
-                align="center"
+                header-align="center"
                 show-overflow
                 max-height="563px"
                 :data="auditTaskList"
@@ -166,10 +252,12 @@ async function agreeFun() {
                     field="projectName"
                     title="项目名称"
                     :edit-render="{}"
-                    width="120px"
+                    width="100px"
+                    header-align="center"
+                    align="left"
                 >
                     <template #default="{ row }">
-                        <span>{{ formatProjectName(row.projectId) }}</span>
+                        <span>{{ projectNameMap[row.projectId] || '' }}</span>
                     </template>
                     <template #edit="{ row }">
                         <vxe-select
@@ -193,9 +281,11 @@ async function agreeFun() {
                     title="任务类型"
                     :edit-render="{}"
                     width="100px"
+                    header-align="center"
+                    align="left"
                 >
                     <template #default="{ row }">
-                        {{ formatTaskType(row.taskTypeId) }}
+                        {{ taskTypeMap[row.taskTypeId] || '' }}
                     </template>
                     <template #edit="{ row }">
                         <vxe-select
@@ -218,6 +308,8 @@ async function agreeFun() {
                     title="任务描述"
                     :edit-render="{}"
                     min-width="250px"
+                    header-align="center"
+                    align="left"
                 >
                     <template #edit="{ row }">
                         <vxe-input
@@ -233,6 +325,8 @@ async function agreeFun() {
                     title="计划完成小时数"
                     :edit-render="{}"
                     width="140px"
+                    header-align="center"
+                    align="right"
                 >
                     <template #edit="{ row }">
                         <vxe-input
@@ -246,7 +340,9 @@ async function agreeFun() {
                     field="planFinishDate"
                     title="计划完成日期"
                     :edit-render="{}"
-                    width="140px"
+                    width="130px"
+                    header-align="center"
+                    align="center"
                 >
                     <template #default="{ row }">
                         {{ getFormattedDateTwo(row.planFinishDate) }}
@@ -264,9 +360,17 @@ async function agreeFun() {
                     title="申请人"
                     :edit-render="{}"
                     width="100px"
+                    header-align="center"
+                    align="center"
                 ></vxe-column>
                 <!-- 操作 -->
-                <vxe-column field="operate" title="操作" width="180px">
+                <vxe-column
+                    field="operate"
+                    title="操作"
+                    width="180px"
+                    header-align="center"
+                    align="center"
+                >
                     <template #default="{ row }">
                         <button
                             @click="showAgreeDialogFun(row.id)"
@@ -280,7 +384,7 @@ async function agreeFun() {
         </div>
 
         <!-- 申请审批 -->
-        <el-dialog v-model="showAgreeDialog" title="申请审批" modal="true">
+        <el-dialog v-model="showAgreeDialog" title="任务申请审批" modal="true">
             <el-form :model="form">
                 <!-- 任务点数 -->
                 <el-form-item label="任务点数" prop="point" :label-width="120">
@@ -329,6 +433,12 @@ async function agreeFun() {
 
 <style scoped lang="scss">
 @import '../../assets/css/variables.scss';
+.el-dialog--center .el-dialog__footer {
+    text-align: right !important;
+}
+.el-dialog__footer {
+    text-align: right !important;
+}
 .approval_container {
     .approval-box {
         margin-top: 15px;
@@ -361,23 +471,39 @@ async function agreeFun() {
     }
 
     .el-button.btn-cancel {
-        color: $color-bfont;
-        background-color: #f0f0f0;
+        width: 64px;
+        height: 26px;
+        background: #f3f4f9;
+        border-radius: 2px;
+        font-size: 12px;
+        font-family: Microsoft YaHei;
+        font-weight: 400;
+        color: #666666;
         border: none;
     }
 
+    .el-button.btn-cancel:hover {
+        color: #666666;
+        background: #ffffff;
+        // border: none;
+        border: 1px solid #e3eeff;
+    }
+
     .btn-sure {
-        color: $color-wfont;
-        background-color: $color-primary;
+        width: 64px;
+        height: 26px;
+        background: #1768e4;
+        border-radius: 2px;
+        border: none;
+        font-size: 12px;
+        font-family: Microsoft YaHei;
+        font-weight: 400;
+        color: #ffffff;
     }
 
     .btn-sure:hover {
-        color: $color-bfont;
-        background-color: $color-primary;
-    }
-
-    .el-button.btn-cancel:hover {
-        background-color: #ccc;
+        background: #2b8aec;
+        color: #ffffff;
     }
 }
 </style>

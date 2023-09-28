@@ -10,11 +10,11 @@ export const validateDescriptionInput = (description) => {
     // 去除所有空格
     const trimmedDescription = description.replace(/\s+/g, '');
 
-    // 判断长度是否为10-200
-    if (trimmedDescription.length < 10 || trimmedDescription.length > 200) {
+    // 判断长度是否为10-1000
+    if (trimmedDescription.length < 10 || trimmedDescription.length > 1000) {
         return {
             isValid: false,
-            message: '任务描述长度必须在10到200字符之间',
+            message: '任务描述长度必须在10到1000字符之间',
         };
     }
 

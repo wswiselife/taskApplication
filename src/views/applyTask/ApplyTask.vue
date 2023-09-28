@@ -34,14 +34,14 @@ import {
     useDeleteTaskStore,
 } from '@/store/modules/task.js';
 
-import { ref, reactive, onMounted, watch } from 'vue';
+import { ref, reactive, onMounted, watch, watchEffect } from 'vue';
 import { ElMessage } from 'element-plus';
 import { storeToRefs } from 'pinia';
-import {
-    formatProjectName,
-    formatTaskType,
-    formatAudit,
-} from '@/assets/data/vxeColumnData';
+// import {
+//     formatProjectName,
+//     formatTaskType,
+//     formatAudit,
+// } from '@/assets/data/vxeColumnData';
 import {
     useSingleUpdateProjectIdStore,
     useSingleUpdateTaskTypeIdStore,
@@ -70,6 +70,12 @@ import Create from '@/components/create/Create.vue';
 onMounted(() => {
     // 进入时获取列表数据
     getEmployeeTasList();
+    // 调用用户权限项目接口
+    getUserProjectList();
+    // 调用获取任务类型接口
+    getTaskTypeList();
+    // 调用审批人接口
+    getAuditUserList();
 });
 
 // 修改的选项的权限获取
@@ -164,10 +170,17 @@ function dialogFormVisibleFun(currentId) {
  * 获取用户有权限的项目
 \********************************/
 const projectList = ref([]);
+const projectNameMap = ref({}); // 记录映射关系
 async function getUserProjectList() {
     const response = await userProjectList.fetchUserProjectListAction();
+    // console.log('项目idresponse ===', response);
     if (response && response.code === 200) {
         projectList.value = response.result;
+        // 根据 projectList 创建 projectNameMap
+        projectNameMap.value = response.result.reduce((map, project) => {
+            map[project.id] = project.name;
+            return map;
+        }, {});
     } else {
         ElMessage({
             message: response.message,
@@ -180,10 +193,17 @@ async function getUserProjectList() {
  * 获取任务类别ID
 \********************************/
 const taskTypeList = ref([]);
+const taskTypeMap = ref({});
 async function getTaskTypeList() {
     const response = await useTaskTypeList.fetchTaskTypeListAction();
+    // console.log('任务类型response ===', response);
     if (response && response.code === 200) {
         taskTypeList.value = response.result;
+        // 根据 taskTypeList 创建 taskTypeMap
+        taskTypeMap.value = response.result.reduce((map, taskType) => {
+            map[taskType.id] = taskType.name;
+            return map;
+        }, {});
     } else {
         ElMessage({
             message: '获取任务类型失败',
@@ -196,10 +216,17 @@ async function getTaskTypeList() {
  * 获取审批人ID
 \********************************/
 const auditUserList = ref([]);
+const auditUserMap = ref({});
 async function getAuditUserList() {
     const response = await useAuditTypeList.fetchAuditUserListAction();
+    // console.log('审批人response ===', response);
     if (response && response.code === 200) {
         auditUserList.value = response.result;
+        // 根据 auditUserList 创建 auditUserMap
+        auditUserMap.value = response.result.reduce((map, auditUser) => {
+            map[auditUser.id] = auditUser.nameEN;
+            return map;
+        }, {});
     } else {
         ElMessage({
             message: '获取审批人失败',
@@ -655,6 +682,16 @@ async function singleUpdatePlanFinishDate(row) {
 //        console.log('event.keyCode ===', event.keyCode)
 //     }
 // }
+
+const textareaRef = ref(null);
+
+watchEffect(() => {
+    const textarea = textareaRef.value;
+    if (textarea) {
+        textarea.style.height = 'auto'; // 重置高度
+        textarea.style.height = textarea.scrollHeight + 'px'; // 设置为内容高度
+    }
+});
 </script>
 
 <template>
@@ -665,13 +702,14 @@ async function singleUpdatePlanFinishDate(row) {
             <!-- vxe 表格 -->
             <vxe-table
                 border
-                align="center"
-                show-overflow
+                header-align="center"
+                :show-overflow="false"
                 max-height="520px"
                 :data="employeeTaskList"
                 :column-config="{ resizable: true, useKey: 'field' }"
                 :edit-config="{ trigger: 'click', mode: 'cell' }"
                 :row-config="{ useKey: 'id' }"
+                :scroll-y="{ enabled: false }"
                 round
                 @edit-actived="handleCellActivated"
                 @edit-closed="handleCellClosed"
@@ -685,10 +723,12 @@ async function singleUpdatePlanFinishDate(row) {
                     field="projectName"
                     title="项目名称"
                     :edit-render="{}"
-                    width="120px"
+                    width="100px"
+                    header-align="center"
+                    align="left"
                 >
                     <template #default="{ row }">
-                        <span>{{ formatProjectName(row.projectId) }}</span>
+                        <span>{{ projectNameMap[row.projectId] || '' }}</span>
                     </template>
                     <template #edit="{ row }">
                         <vxe-select
@@ -712,9 +752,11 @@ async function singleUpdatePlanFinishDate(row) {
                     title="任务类型"
                     :edit-render="{}"
                     width="100px"
+                    header-align="center"
+                    align="left"
                 >
                     <template #default="{ row }">
-                        {{ formatTaskType(row.taskTypeId) }}
+                        {{ taskTypeMap[row.taskTypeId] || '' }}
                     </template>
                     <template #edit="{ row }">
                         <vxe-select
@@ -738,12 +780,16 @@ async function singleUpdatePlanFinishDate(row) {
                     title="任务描述"
                     :edit-render="{}"
                     min-width="250px"
+                    header-align="center"
+                    align="left"
+                    class="wrap-content"
                 >
                     <template #edit="{ row }">
-                        <vxe-input
+                        <textarea
                             v-model="row.taskDescription"
-                            type="text"
-                        ></vxe-input>
+                            type="textarea"
+                            ref="textareaRef"
+                        ></textarea>
                     </template>
                 </vxe-column>
                 <!-- 计划完成小时数 -->
@@ -752,6 +798,8 @@ async function singleUpdatePlanFinishDate(row) {
                     title="计划完成小时数"
                     :edit-render="{}"
                     width="140px"
+                    header-align="center"
+                    align="right"
                 >
                     <template #edit="{ row }">
                         <vxe-input
@@ -765,7 +813,9 @@ async function singleUpdatePlanFinishDate(row) {
                     field="planFinishDate"
                     title="计划完成日期"
                     :edit-render="{}"
-                    width="140px"
+                    width="130px"
+                    header-align="center"
+                    align="center"
                 >
                     <template #default="{ row }">
                         {{ getFormattedDateTwo(row.planFinishDate) }}
@@ -795,9 +845,11 @@ async function singleUpdatePlanFinishDate(row) {
                     title="审批人"
                     :edit-render="{}"
                     width="100px"
+                    header-align="center"
+                    align="center"
                 >
                     <template #default="{ row }">
-                        {{ formatAudit(row.applyAuditId) }}
+                        {{ auditUserMap[row.applyAuditId] || '' }}
                     </template>
                     <template #edit="{ row }">
                         <vxe-select
@@ -816,7 +868,13 @@ async function singleUpdatePlanFinishDate(row) {
                     </template>
                 </vxe-column>
                 <!-- 操作 -->
-                <vxe-column field="operate" title="操作" width="180px">
+                <vxe-column
+                    field="operate"
+                    title="操作"
+                    width="180px"
+                    header-align="center"
+                    align="center"
+                >
                     <template #default="{ row }">
                         <button
                             @click="dialogFormVisibleFun(row.id)"
@@ -836,7 +894,11 @@ async function singleUpdatePlanFinishDate(row) {
         </div>
 
         <!-- 修改的弹出框 -->
-        <el-dialog v-model="dialogFormVisible" title="任务修改" modal="true">
+        <el-dialog
+            v-model="dialogFormVisible"
+            title="任务申请修改"
+            modal="true"
+        >
             <el-form :model="form">
                 <!-- 项目ID-选择框 -->
                 <el-form-item
@@ -938,8 +1000,8 @@ async function singleUpdatePlanFinishDate(row) {
         </el-dialog>
 
         <!-- 确定删除提示框 -->
-        <el-dialog v-model="showDeleteDialog" title="任务删除">
-            确定删除任务吗
+        <el-dialog v-model="showDeleteDialog" title="任务申请删除">
+            确定删除任务申请吗
             <template #footer>
                 <span class="dialog-footer">
                     <el-button
@@ -964,6 +1026,10 @@ async function singleUpdatePlanFinishDate(row) {
 <style scoped lang="scss">
 @import '../../assets/css/variables.scss';
 
+.el-dialog__footer {
+    text-align: right;
+}
+
 .apply_container {
     // TODO: 添加样式
     width: 100%;
@@ -978,6 +1044,11 @@ async function singleUpdatePlanFinishDate(row) {
         .table {
             margin: 0 21px 10px 21px;
         }
+    }
+
+    // 多行显示内容信息
+    .wrap-content {
+        white-space: pre-line;
     }
     .update,
     .delete {
@@ -1021,23 +1092,39 @@ async function singleUpdatePlanFinishDate(row) {
 
     // 对话框按钮样式
     .el-button.btn-cancel {
-        color: $color-bfont;
-        background-color: #f0f0f0;
+        width: 64px;
+        height: 26px;
+        background: #f3f4f9;
+        border-radius: 2px;
+        font-size: 12px;
+        font-family: Microsoft YaHei;
+        font-weight: 400;
+        color: #666666;
         border: none;
     }
 
+    .el-button.btn-cancel:hover {
+        color: #666666;
+        background: #ffffff;
+        // border: none;
+        border: 1px solid #e3eeff;
+    }
+
     .btn-sure {
-        color: $color-wfont;
-        background-color: $color-primary;
+        width: 64px;
+        height: 26px;
+        background: #1768e4;
+        border-radius: 2px;
+        border: none;
+        font-size: 12px;
+        font-family: Microsoft YaHei;
+        font-weight: 400;
+        color: #ffffff;
     }
 
     .btn-sure:hover {
-        color: $color-bfont;
-        background-color: $color-primary;
-    }
-
-    .el-button.btn-cancel:hover {
-        background-color: #ccc;
+        background: #2b8aec;
+        color: #ffffff;
     }
 
     // 对话框右上角取消btn
@@ -1047,4 +1134,3 @@ async function singleUpdatePlanFinishDate(row) {
     }
 }
 </style>
-@/utils/validate/validateHoursInput

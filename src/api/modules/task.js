@@ -14,7 +14,7 @@ import { request } from '../index';
 // 新建任务
 export const createTask = (data) => {
     // console.log('data ===', data);
-    return request.post('TaskApply/AddTaskApply', {
+    return request.post('/jsy/TaskApply/AddTaskApply', {
         taskDescription: data.taskDescription,
         projectId: data.projectId,
         taskTypeId: data.taskTypeId,
@@ -26,17 +26,17 @@ export const createTask = (data) => {
 
 // 获取用户拥有权限的项目类型
 export const getUserProjectList = () => {
-    return request.get('/Project/GetProjectListByUserId');
+    return request.get('/jsy/Project/GetProjectListByUserId');
 };
 
 // 获取所有任务类别数据
 export const getTaskTypeList = () => {
-    return request.get('/TaskType/GetTaskTypeList');
+    return request.get('/jsy/TaskType/GetTaskTypeList');
 };
 
 // 获取审批人ID
 export const getAuditUserList = () => {
-    return request.get('/Employee/GetTaskApplyAuditUserList');
+    return request.get('/jsy/Employee/GetTaskApplyAuditUserList');
 };
 
 /********************************\
@@ -44,26 +44,26 @@ export const getAuditUserList = () => {
 \********************************/
 // 获取待审批列表（申请人）
 export const getEmployeeTaskData = () => {
-    return request.get('/TaskApply/GetNewTaskApplyByEmployeeId');
+    return request.get('/jsy/TaskApply/GetNewTaskApplyByEmployeeId');
 };
 
 // 获取待审批列表（审批人）
 export const getAuditTaskData = () => {
-    return request.get('/TaskApply/GetNewTaskApplyByApplyAuditId');
+    return request.get('/jsy/TaskApply/GetNewTaskApplyByApplyAuditId');
 };
 
 /********************************\
  * 修改申请
 \********************************/
 export const getUpdateTaskData = (data) => {
-    return request.post('/TaskApply/UpdateTaskApply', data);
+    return request.post('/jsy/TaskApply/UpdateTaskApply', data);
 };
 
 /********************************\
  * 假删除申请
 \********************************/
 export const deleteTaskData = (currentId) => {
-    return request.post('/TaskApply/DeleteTaskApply', null, {
+    return request.post('/jsy/TaskApply/DeleteTaskApply', null, {
         params: {
             pId: currentId,
         },
@@ -75,7 +75,7 @@ export const deleteTaskData = (currentId) => {
 \********************************/
 
 export const agreeTaskData = (data) => {
-    return request.post('/TaskApply/TaskApplyAudit', {
+    return request.post('/jsy/TaskApply/TaskApplyAudit', {
         taskApplyId: data.chooseAgreeId,
         taskPoints: data.point,
         planFinishDate: data.finishDate,

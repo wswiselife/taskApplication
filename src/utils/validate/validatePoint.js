@@ -64,8 +64,8 @@ const validatePoint = (PointInput) => {
     }
 
     const point = parseFloat(inputStr);
-    // 确保小时数在0到100之间
-    if (point > 0 && point <= 30) {
+    // 确保小时数在0到1000之间
+    if (point > 0 && point <= 1000) {
         return {
             isValid: true,
             message: '输入的点数有效',
@@ -73,7 +73,7 @@ const validatePoint = (PointInput) => {
     } else {
         return {
             isValid: false,
-            message: '输入的点数超出范围（0-30）',
+            message: '输入的点数超出范围（0-1000）',
         };
     }
 };

@@ -214,7 +214,11 @@ async function createTaskBtn() {
         <el-button @click="dialogFormVisibleFun" class="create">新增</el-button>
 
         <!-- 弹出框 -->
-        <el-dialog v-model="dialogFormVisible" title="任务新增" modal="true">
+        <el-dialog
+            v-model="dialogFormVisible"
+            title="任务申请新增"
+            modal="true"
+        >
             <el-form :model="form">
                 <!-- 项目ID-选择框 -->
                 <el-form-item
@@ -330,6 +334,10 @@ async function createTaskBtn() {
 
 <style scoped lang="scss">
 @import '../../assets/css/variables.scss';
+
+.el-dialog__footer {
+    text-align: right;
+}
 .el-button--text {
     margin-right: 15px;
 }
@@ -344,23 +352,39 @@ async function createTaskBtn() {
 }
 
 .el-button.btn-cancel {
-    color: $color-bfont;
-    background-color: #f0f0f0;
+    width: 64px;
+    height: 26px;
+    background: #f3f4f9;
+    border-radius: 2px;
+    font-size: 12px;
+    font-family: Microsoft YaHei;
+    font-weight: 400;
+    color: #666666;
     border: none;
 }
 
+.el-button.btn-cancel:hover {
+    color: #666666;
+    background: #ffffff;
+    // border: none;
+    border: 1px solid #e3eeff;
+}
+
 .btn-sure {
-    color: $color-wfont;
-    background-color: $color-primary;
+    width: 64px;
+    height: 26px;
+    background: #1768e4;
+    border-radius: 2px;
+    border: none;
+    font-size: 12px;
+    font-family: Microsoft YaHei;
+    font-weight: 400;
+    color: #ffffff;
 }
 
 .btn-sure:hover {
-    color: $color-bfont;
-    background-color: $color-primary;
-}
-
-.el-button.btn-cancel:hover {
-    background-color: #ccc;
+    background: #2b8aec;
+    color: #ffffff;
 }
 </style>
 

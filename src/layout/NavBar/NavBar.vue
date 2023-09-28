@@ -75,7 +75,7 @@ const firstLetter = computed(() => {
 </script>
 
 <template>
-    <div class="sidebar_container">
+    <div class="navbar_container">
         <!-- navbar 左侧 -->
         <div class="navbar_left">
             <!-- logo -->
@@ -100,7 +100,7 @@ const firstLetter = computed(() => {
 
 <style scoped lang="scss">
 @import '../../assets/css/variables.scss';
-.sidebar_container {
+.navbar_container {
     width: 100%;
     height: 70px;
     display: flex;
