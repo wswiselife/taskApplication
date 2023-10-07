@@ -22,3 +22,19 @@ export const useIsCreatedStore = defineStore('isCreated', {
         },
     },
 });
+
+// 存储登录后的userId
+export const useUserIdStore = defineStore('userId', {
+    state: () => {
+        return {
+            userId: localStorage.getItem('userId') || '',
+        };
+    },
+    actions: {
+        saveUserId(payload) {
+            this.userId = payload;
+            // 当 userId 被更新时，将其保存到 localStorage
+            localStorage.setItem('userId', payload);
+        },
+    },
+});

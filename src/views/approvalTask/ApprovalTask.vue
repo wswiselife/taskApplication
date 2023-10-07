@@ -24,6 +24,8 @@ import { disabledPreviousDates } from '@/utils/limit/limitDateSelect';
 import { validateHoursInput } from '@/utils/validate/validateHoursInput';
 // 点数校验
 import { validatePoint } from '@/utils/validate/validatePoint';
+// 获取项目id
+import { useUserIdStore } from '@/store/public';
 /********************************\
  * 公共引入处理
 \********************************/
@@ -39,6 +41,7 @@ onMounted(() => {
 
 const userProjectList = useUserProjectListStore();
 const useTaskTypeList = useTaskTypeListStore();
+const userIdStore = useUserIdStore();
 
 // todo 这里其实是获取申请人的用户的权限，现在可以暂时这么做，但是当表格的数据需要修改的时候，
 // 我们就要真正的获取申请人的权限，然后做映射，在表格中显示对应的项目名称、任务类型或申请人
@@ -49,7 +52,10 @@ const useTaskTypeList = useTaskTypeListStore();
 const projectList = ref([]);
 const projectNameMap = ref({}); // 记录映射关系
 async function getUserProjectList() {
-    const response = await userProjectList.fetchUserProjectListAction();
+    console.log('userIdStore.userId ===', userIdStore.userId);
+    const response = await userProjectList.fetchUserProjectListAction(
+        userIdStore.userId,
+    );
     // console.log('项目idresponse ===', response);
     if (response && response.code === 200) {
         projectList.value = response.result;
@@ -117,7 +123,7 @@ async function getTaskTypeList() {
 \********************************/
 function getAuditUserData() {
     useAuditTaskList.fetchAuditTaskAction();
-    // console.log('任务审批 auditTaskList ===', auditTaskList);
+    console.log('任务审批 auditTaskList ===', auditTaskList);
 }
 const useAuditTaskList = useAuditTaskStore();
 const { auditTaskList } = storeToRefs(useAuditTaskList);

@@ -27,6 +27,9 @@ import { disabledPreviousDates } from '@/utils/limit/limitDateSelect';
 import { getFormattedDate } from '@/utils/format/formatDate';
 // 任务描述验证
 import { validateDescriptionInput } from '@/utils/validate/validateDescript';
+// 获取项目id
+import { useUserIdStore } from '@/store/public';
+const userIdStore = useUserIdStore();
 
 /********************************\
  * 表单数据定义
@@ -71,7 +74,9 @@ function dialogFormVisibleFun() {
 \********************************/
 const projectList = ref([]);
 async function getUserProjectList() {
-    const response = await userProjectList.fetchUserProjectListAction();
+    const response = await userProjectList.fetchUserProjectListAction(
+        userIdStore.userId,
+    );
     if (response && response.code === 200) {
         projectList.value = response.result;
     } else {

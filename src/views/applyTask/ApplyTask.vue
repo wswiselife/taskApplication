@@ -63,6 +63,8 @@ import { disabledPreviousDates } from '@/utils/limit/limitDateSelect';
 import { validateDescriptionInput } from '@/utils/validate/validateDescript';
 // 创建按钮
 import Create from '@/components/create/Create.vue';
+// 获取store中的userid
+import { useUserIdStore } from '@/store/public';
 /********************************\
  * 公共引入处理
 \********************************/
@@ -87,6 +89,8 @@ const useAuditTypeList = useAuditUserListStore();
 const useUpdateTask = useUpdateTaskStore();
 // 假删除接口数据
 const deleteTask = useDeleteTaskStore();
+// 获取用户id
+const userIdStore = useUserIdStore();
 
 /********************************\
  * 获取列表数据并渲染
@@ -172,8 +176,10 @@ function dialogFormVisibleFun(currentId) {
 const projectList = ref([]);
 const projectNameMap = ref({}); // 记录映射关系
 async function getUserProjectList() {
-    const response = await userProjectList.fetchUserProjectListAction();
-    // console.log('项目idresponse ===', response);
+    const response = await userProjectList.fetchUserProjectListAction(
+        userIdStore.userId,
+    );
+    console.log('项目idresponse ===', response);
     if (response && response.code === 200) {
         projectList.value = response.result;
         // 根据 projectList 创建 projectNameMap

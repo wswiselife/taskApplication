@@ -49,8 +49,8 @@ export const useCreateTaskStore = defineStore('userCreate', {
 export const useUserProjectListStore = defineStore('userProjectList', {
     state: () => {},
     actions: {
-        async fetchUserProjectListAction() {
-            const result = await getUserProjectList();
+        async fetchUserProjectListAction(userId) {
+            const result = await getUserProjectList(userId);
             return result;
         },
     },

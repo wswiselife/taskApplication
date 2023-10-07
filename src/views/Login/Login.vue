@@ -19,12 +19,14 @@ import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useUserLoginStore } from '../../store/modules/user';
 import { ElMessage } from 'element-plus';
+import { useUserIdStore } from '@/store/public';
 
 /********************************\
  * 公共引入处理
 \********************************/
 const router = useRouter();
 const userLoginStore = useUserLoginStore();
+const userIdStore = useUserIdStore();
 
 /********************************\
  * 登录部分
@@ -71,6 +73,9 @@ async function loginbtn() {
                 'authorityList',
                 JSON.stringify(response.result.authorityList),
             );
+
+            // 存储用户的id到store中
+            userIdStore.saveUserId(response.result.userId);
 
             // 检查是否具有管理员权限
             const hasAdminAuthority =

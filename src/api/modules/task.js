@@ -25,8 +25,11 @@ export const createTask = (data) => {
 };
 
 // 获取用户拥有权限的项目类型
-export const getUserProjectList = () => {
-    return request.get('/jsy/Project/GetProjectListByUserId');
+export const getUserProjectList = (userId) => {
+    // console.log('userId ===', userId);
+    return request.post('/jsy/Project/GetProjectListByUserId', {
+        userId: userId,
+    });
 };
 
 // 获取所有任务类别数据
