@@ -11,6 +11,7 @@ import App from './App.vue';
 // normalize.css
 import 'normalize.css/normalize.css';
 import '@/assets/css/common.scss';
+import '@/assets/css/element.scss';
 // router4
 import router from '@/router/index';
 // element-plus
