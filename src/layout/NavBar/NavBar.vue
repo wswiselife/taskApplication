@@ -45,21 +45,41 @@ async function logoutbtn() {
             });
 
             router.push({ path: '/login' });
+
+            // 禁止浏览器的后退功能
+            window.addEventListener('popstate', function () {
+                history.go(1);
+            });
         } else {
-            // 注销失败，打印错误信息
-            console.error('注销失败:', response.message);
             router.push({ path: '/login' });
             ElMessage({
                 message: response.message,
                 type: 'error',
             });
+            // 注销失败，打印错误信息
+            // console.error('注销失败:', response.message);
+            localStorage.removeItem('token');
+            localStorage.removeItem('authorityList');
+
+            // 禁止浏览器的后退功能
+            window.addEventListener('popstate', function () {
+                history.go(1);
+            });
         }
     } catch (error) {
         // 捕获任何错误并打印
         console.error('发生错误:', error);
+        router.push({ path: '/login' });
         ElMessage({
             message: '退出登录失败',
             type: 'error',
+        });
+        localStorage.removeItem('token');
+        localStorage.removeItem('authorityList');
+
+        // 禁止浏览器的后退功能
+        window.addEventListener('popstate', function () {
+            history.go(1);
         });
     }
 }
@@ -67,7 +87,7 @@ async function logoutbtn() {
 /********************************\
  * 获取用户名
 \********************************/
-const username = ref(localStorage.getItem('username') || '未知用户');
+const username = ref(localStorage.getItem('username') || '?');
 
 const firstLetter = computed(() => {
     return username.value && username.value.length > 0 ? username.value[0] : '';

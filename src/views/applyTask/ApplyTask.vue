@@ -34,7 +34,7 @@ import {
     useDeleteTaskStore,
 } from '@/store/modules/task.js';
 
-import { ref, reactive, onMounted, watch, watchEffect } from 'vue';
+import { ref, reactive, onMounted, watch, computed } from 'vue';
 import { ElMessage } from 'element-plus';
 import { storeToRefs } from 'pinia';
 // import {
@@ -65,6 +65,18 @@ import { validateDescriptionInput } from '@/utils/validate/validateDescript';
 import Create from '@/components/create/Create.vue';
 // 获取store中的userid
 import { useUserIdStore } from '@/store/public';
+
+/********************************\ 
+ * 获取权限处理
+\********************************/
+const authorityList = ref([]);
+onMounted(() => {
+    // 从 localStorage 中获取权限信息
+    const storedAuthorityList = localStorage.getItem('authorityList');
+    if (storedAuthorityList) {
+        authorityList.value = JSON.parse(storedAuthorityList);
+    }
+});
 /********************************\
  * 公共引入处理
 \********************************/
@@ -662,6 +674,13 @@ async function singleUpdatePlanFinishDate(row) {
 }
 
 /********************************\
+ * 完整显示1000字符
+\********************************/
+const dialogWidth = computed(() => {
+    return form.taskDescription.length > 500 ? '80%' : '50%';
+});
+
+/********************************\
  * 触发单元格编辑时,获取对应权限
 \********************************/
 
@@ -688,20 +707,10 @@ async function singleUpdatePlanFinishDate(row) {
 //        console.log('event.keyCode ===', event.keyCode)
 //     }
 // }
-
-const textareaRef = ref(null);
-
-watchEffect(() => {
-    const textarea = textareaRef.value;
-    if (textarea) {
-        textarea.style.height = 'auto'; // 重置高度
-        textarea.style.height = textarea.scrollHeight + 'px'; // 设置为内容高度
-    }
-});
 </script>
 
 <template>
-    <div class="apply_container">
+    <div class="apply_container" v-if="authorityList.includes('WEB_TaskApply')">
         <div class="apply-box">
             <!-- 创建按钮 -->
             <create class="apply-create"></create>
@@ -791,11 +800,10 @@ watchEffect(() => {
                     class="wrap-content"
                 >
                     <template #edit="{ row }">
-                        <textarea
+                        <vxe-input
                             v-model="row.taskDescription"
                             type="textarea"
-                            ref="textareaRef"
-                        ></textarea>
+                        ></vxe-input>
                     </template>
                 </vxe-column>
                 <!-- 计划完成小时数 -->
@@ -904,6 +912,7 @@ watchEffect(() => {
             v-model="dialogFormVisible"
             title="任务申请修改"
             modal="true"
+            :width="dialogWidth"
         >
             <el-form :model="form">
                 <!-- 项目ID-选择框 -->
@@ -987,7 +996,12 @@ watchEffect(() => {
                     prop="desc"
                     :label-width="formLabelWidth"
                 >
-                    <el-input type="textarea" v-model="form.taskDescription" />
+                    <el-input
+                        type="textarea"
+                        v-model="form.taskDescription"
+                        :autosize="{ minRows: 2, maxRows: 10 }"
+                        :maxlength="1000"
+                    />
                 </el-form-item>
             </el-form>
             <template #footer>
@@ -1027,6 +1041,7 @@ watchEffect(() => {
             </template>
         </el-dialog>
     </div>
+    <div class="no-premission" v-else>您还不具备该权限！</div>
 </template>
 
 <style scoped lang="scss">
@@ -1034,6 +1049,11 @@ watchEffect(() => {
 
 .el-dialog__footer {
     text-align: right;
+}
+
+.no-premission {
+    margin: 100px auto;
+    text-align: center;
 }
 
 .apply_container {
@@ -1052,10 +1072,6 @@ watchEffect(() => {
         }
     }
 
-    // 多行显示内容信息
-    .wrap-content {
-        white-space: pre-line;
-    }
     .update,
     .delete {
         border: none;

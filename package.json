@@ -12,8 +12,10 @@
         "preview": "vite preview"
     },
     "dependencies": {
+        "@babel/polyfill": "^7.12.1",
         "@element-plus/icons-vue": "^2.1.0",
         "axios": "^1.5.0",
+        "core-js": "^3.33.0",
         "element-plus": "^2.3.12",
         "moment": "^2.29.4",
         "normalize.css": "^8.0.1",
@@ -25,9 +27,11 @@
         "xe-utils": "^3.5.13"
     },
     "devDependencies": {
-        "@babel/core": "^7.22.11",
+        "@babel/core": "^7.23.0",
         "@babel/eslint-parser": "^7.22.11",
+        "@babel/preset-env": "^7.22.20",
         "@types/node": "^20.5.7",
+        "@types/regenerator-runtime": "^0.13.2",
         "@vitejs/plugin-vue": "^4.2.3",
         "eslint": "^8.48.0",
         "eslint-config-prettier": "^9.0.0",
@@ -37,5 +41,10 @@
         "sass": "^1.66.1",
         "vite": "^4.4.5",
         "vite-plugin-eslint": "^1.8.1"
-    }
+    },
+    "browserslist": [
+        "> 1%",
+        "last 2 versions",
+        "not dead"
+    ]
 }

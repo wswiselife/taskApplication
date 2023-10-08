@@ -33,6 +33,7 @@ import sidebar from './sideBar/SideBar.vue';
                 <sidebar></sidebar>
             </div>
             <!-- AppMain -->
+
             <div class="app_main">
                 <!-- <AppMain>
                     <component :is="currentComponent"></component>

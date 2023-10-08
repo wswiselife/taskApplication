@@ -9,7 +9,9 @@
 import axios from 'axios';
 //引入nprogress 进度条插件
 import NProgress from 'nprogress';
-
+// 路由跳转
+import { useRouter } from 'vue-router';
+const router = useRouter();
 // 开发环境配置
 // const processENV = () => {
 //     if (import.meta.env.VITE_API_URL === 'development') {
@@ -60,6 +62,8 @@ request.interceptors.response.use(
         // 为什么拦截401？token 过期问题
         if (error.response && error.response.status === 401) {
             // 重新登录逻辑
+            localStorage.removeItem('token'); // 清除 token
+            router.push({ path: '/login' }); // 重定向到登录页面
             console.log('请重新登录');
         }
         return Promise.reject(error);

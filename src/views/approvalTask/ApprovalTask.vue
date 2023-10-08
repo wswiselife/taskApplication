@@ -26,6 +26,18 @@ import { validateHoursInput } from '@/utils/validate/validateHoursInput';
 import { validatePoint } from '@/utils/validate/validatePoint';
 // 获取项目id
 import { useUserIdStore } from '@/store/public';
+
+/********************************\ 
+ * 获取权限处理
+\********************************/
+const authorityList = ref([]);
+onMounted(() => {
+    // 从 localStorage 中获取权限信息
+    const storedAuthorityList = localStorage.getItem('authorityList');
+    if (storedAuthorityList) {
+        authorityList.value = JSON.parse(storedAuthorityList);
+    }
+});
 /********************************\
  * 公共引入处理
 \********************************/
@@ -230,7 +242,10 @@ async function agreeFun() {
 </script>
 
 <template>
-    <div class="approval_container">
+    <div
+        class="approval_container"
+        v-if="authorityList.includes('WEB_TaskApplyAudit')"
+    >
         <!--  暂时不启动编辑功能   :edit-config="{ trigger: 'dblclick', mode: 'cell' }" -->
         <!-- projectList、taskTypeList、auditUserList也没获取 -->
         <!-- todo -->
@@ -239,7 +254,7 @@ async function agreeFun() {
             <vxe-table
                 border
                 header-align="center"
-                show-overflow
+                :show-overflow="false"
                 max-height="563px"
                 :data="auditTaskList"
                 :column-config="{ resizable: true, useKey: 'field' }"

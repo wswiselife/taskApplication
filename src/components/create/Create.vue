@@ -8,7 +8,7 @@ import {
 /********************************\
  * 公共引入处理
 \********************************/
-import { reactive, ref } from 'vue';
+import { reactive, ref, computed } from 'vue';
 const createTask = useCreateTaskStore();
 const userProjectList = useUserProjectListStore();
 const useTaskTypeList = useTaskTypeListStore();
@@ -212,6 +212,13 @@ async function createTaskBtn() {
         });
     }
 }
+
+/********************************\
+ * 完整显示1000字符
+\********************************/
+const dialogWidth = computed(() => {
+    return form.taskDescription.length > 500 ? '80%' : '50%';
+});
 </script>
 
 <template>
@@ -223,6 +230,8 @@ async function createTaskBtn() {
             v-model="dialogFormVisible"
             title="任务申请新增"
             modal="true"
+            :width="dialogWidth"
+            class="dialog-content"
         >
             <el-form :model="form">
                 <!-- 项目ID-选择框 -->
@@ -311,9 +320,11 @@ async function createTaskBtn() {
                 >
                     <el-input
                         type="textarea"
+                        :autosize="{ minRows: 2, maxRows: 10 }"
+                        :maxlength="1000"
                         v-model="form.taskDescription"
                         placeholder="请填写任务描述"
-                    />
+                    ></el-input>
                 </el-form-item>
             </el-form>
             <template #footer>
@@ -396,6 +407,10 @@ async function createTaskBtn() {
 <style scoped lang="scss">
 @import '../../assets/css/variables.scss';
 .create_container {
+    .dialog-content {
+        max-height: 400px; /* 你可以根据需要调整这个值 */
+        overflow-y: auto;
+    }
     .create {
         width: 80px;
         height: 32px;

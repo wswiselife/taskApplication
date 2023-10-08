@@ -37,15 +37,18 @@ const router = createRouter({
         {
             path: '/dashboard',
             component: () => import('../layout/index.vue'),
+            meta: { requiresAuth: true },
             children: [
                 {
                     path: 'apply',
                     component: () => import('../views/applyTask/ApplyTask.vue'),
+                    meta: { requiresAuth: true },
                 },
                 {
                     path: 'approval',
                     component: () =>
                         import('../views/approvalTask/ApprovalTask.vue'),
+                    meta: { authority: 'WEB_TaskApplyAudit' },
                 },
             ],
         },
@@ -54,6 +57,33 @@ const router = createRouter({
             component: () => import('../views/login/Login.vue'),
         },
     ],
+});
+
+// 路由守卫
+router.beforeEach((to, from, next) => {
+    const token = localStorage.getItem('token');
+    const authorityList = JSON.parse(
+        localStorage.getItem('authorityList') || '[]',
+    );
+
+    // 检查是否需要身份验证
+    if (to.matched.some((record) => record.meta.requiresAuth)) {
+        // 用户未登录
+        if (!token) {
+            next('/login');
+            return;
+        }
+
+        // 检查用户是否有访问该路由的权限
+        if (to.meta.authority && !authorityList.includes(to.meta.authority)) {
+            // 如果用户没有权限，导航回他们之前的页面
+            next(from.path);
+            return;
+        }
+    }
+
+    // 允许导航
+    next();
 });
 
 export default router;
