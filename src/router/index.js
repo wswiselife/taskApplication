@@ -50,6 +50,11 @@ const router = createRouter({
                         import('../views/approvalTask/ApprovalTask.vue'),
                     meta: { authority: 'WEB_TaskApplyAudit' },
                 },
+                {
+                    path: 'urllist',
+                    component: () => import('../views/urllist/URLList.vue'),
+                    meta: { authority: 'WEB_URLList' },
+                },
             ],
         },
         {

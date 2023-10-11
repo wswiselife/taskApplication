@@ -16,7 +16,10 @@ import {
 import { storeToRefs } from 'pinia';
 import { ref, reactive, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
-import { getFormattedDateTwo } from '@/utils/format/formatDate';
+import {
+    getFormattedDate,
+    getFormattedDateTwo,
+} from '@/utils/format/formatDate';
 // import { formatProjectName, formatTaskType } from '@/assets/data/vxeColumnData';
 // import { disabledPreviousDates } from '@/utils/limitDateSelect';
 import { disabledPreviousDates } from '@/utils/limit/limitDateSelect';
@@ -26,8 +29,10 @@ import { validateHoursInput } from '@/utils/validate/validateHoursInput';
 import { validatePoint } from '@/utils/validate/validatePoint';
 // 获取项目id
 import { useUserIdStore } from '@/store/public';
+// 导入时间&分钟选择
+import HourAndMinSelect from '@/components/hour-min-select/HourAndMinSelect.vue';
 
-/********************************\ 
+/********************************\
  * 获取权限处理
 \********************************/
 const authorityList = ref([]);
@@ -77,10 +82,10 @@ async function getUserProjectList() {
             return map;
         }, {});
     } else {
-        ElMessage({
-            message: response.message,
-            type: 'error',
-        });
+        // ElMessage({
+        //     message: response.message,
+        //     type: 'error',
+        // });
     }
 }
 
@@ -100,10 +105,10 @@ async function getTaskTypeList() {
             return map;
         }, {});
     } else {
-        ElMessage({
-            message: '获取任务类型失败',
-            type: 'error',
-        });
+        // ElMessage({
+        //     message: '获取任务类型失败',
+        //     type: 'error',
+        // });
     }
 }
 
@@ -148,6 +153,7 @@ const form = reactive({
     point: null,
     chooseAgreeId: null,
     finishDate: '',
+    finishDateTime: '',
     finishHour: null,
 });
 
@@ -195,6 +201,8 @@ async function agreeFun() {
         return;
     }
 
+    form.finishDate = getFormattedDate(form.finishDate, form.finishDateTime);
+
     // 验证小时数
     const validateHoursInputResult = validateHoursInput(form.finishHour);
     if (!validateHoursInputResult.isValid) {
@@ -216,6 +224,8 @@ async function agreeFun() {
                 message: '任务审批成功',
                 type: 'success',
             });
+            // 清空输入的点数
+            form.point = null;
             // 重新发送请求
             useAuditTaskList.fetchAuditTaskAction();
         } else {
@@ -230,7 +240,8 @@ async function agreeFun() {
         console.log('error ===', error);
         showAgreeDialog.value = false;
         ElMessage({
-            message: `任务审批失败。${error}`,
+            // todo 任务审批请求任务不成功。+error
+            message: `任务审批请求任务不成功。${error}`,
             type: 'error',
         });
     }
@@ -239,6 +250,14 @@ async function agreeFun() {
 /********************************\
  * 日期选择限制//todo
 \********************************/
+
+/********************************\
+ * 时间传递（自定义事件）
+\********************************/
+const handleTimeUpdate = (time) => {
+    // console.log('Received update-time event with value:', time);
+    form.finishDateTime = time;
+};
 </script>
 
 <template>
@@ -421,13 +440,38 @@ async function agreeFun() {
                 </el-form-item>
                 <!-- 计划完成日期 -->
                 <el-form-item label="计划完成日期" :label-width="120">
-                    <el-date-picker
-                        v-model="form.finishDate"
-                        type="date"
-                        placeholder="选择计划完成日期"
-                        style="width: 100%"
-                        :disabledDate="disabledPreviousDates"
-                    />
+                    <el-col :span="11">
+                        <el-date-picker
+                            v-model="form.finishDate"
+                            type="date"
+                            placeholder="选择计划完成日期"
+                            style="width: 100%"
+                            :disabledDate="disabledPreviousDates"
+                        />
+                    </el-col>
+                    <el-col :span="2" style="text-align: center">
+                        <span>-</span>
+                    </el-col>
+                    <el-col :span="11">
+                        <!-- 将来可能只需要小时 -->
+                        <!-- <el-select
+                            v-model="form.finishDateTime"
+                            placeholder="请选择小时"
+                            style="width: 100%"
+                        >
+                            <el-option
+                                v-for="n in 24"
+                                :key="n - 1"
+                                :label="`${n - 1} `"
+                                :value="n - 1"
+                            ></el-option>
+                        </el-select> -->
+
+                        <hour-and-min-select
+                            :selected-time="form.finishDate"
+                            @update-time="handleTimeUpdate"
+                        ></hour-and-min-select>
+                    </el-col>
                 </el-form-item>
             </el-form>
 

@@ -49,8 +49,8 @@ import sidebar from './sideBar/SideBar.vue';
 @import '../assets/css/variables.scss';
 
 .layout_container {
-    height: 100%;
-    width: 100%;
+    height: 100vh;
+    width: 100vw;
     // background-color: $color-four;
 
     .navbar {

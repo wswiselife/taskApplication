@@ -100,7 +100,7 @@ const firstLetter = computed(() => {
         <div class="navbar_left">
             <!-- logo -->
             <div class="logo">
-                <img src="../../assets/img/logo.png" alt="logo" />
+                <img src="/logo.png" alt="logo" />
             </div>
             <!-- 创建按钮 -->
             <!-- <create></create> -->

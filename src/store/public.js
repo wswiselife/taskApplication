@@ -8,7 +8,7 @@
  */
 import { defineStore } from 'pinia';
 
-// 创建后判断是否更新列表
+// 创建task后判断是否更新列表
 export const useIsCreatedStore = defineStore('isCreated', {
     state: () => {
         return {
@@ -35,6 +35,21 @@ export const useUserIdStore = defineStore('userId', {
             this.userId = payload;
             // 当 userId 被更新时，将其保存到 localStorage
             localStorage.setItem('userId', payload);
+        },
+    },
+});
+
+// 创建url后判断是否更新列表
+export const useIsCreatedURLStore = defineStore('isCreatedURL', {
+    state: () => {
+        return {
+            isCreatedURL: false,
+        };
+    },
+    actions: {
+        setIsCreatedURL(payload) {
+            this.isCreatedURL = payload;
+            // console.log('this.isCteated ===', this.isCreated);
         },
     },
 });

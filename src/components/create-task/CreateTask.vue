@@ -30,6 +30,8 @@ import { validateDescriptionInput } from '@/utils/validate/validateDescript';
 // 获取项目id
 import { useUserIdStore } from '@/store/public';
 const userIdStore = useUserIdStore();
+// 导入时间&分钟选择
+import HourAndMinSelect from '@/components/hour-min-select/HourAndMinSelect.vue';
 
 /********************************\
  * 表单数据定义
@@ -40,6 +42,7 @@ const form = reactive({
     taskTypeId: null, // 任务类别 ID
     planFinishHour: null, // 计划完成小时数
     planFinishDate: '', // 计划完成日期
+    planFinishDateTime: '', // 计划的日期的时间
     applyAuditId: null, // 审批人ID
 });
 
@@ -50,6 +53,7 @@ function resetForm() {
     form.taskTypeId = null;
     form.planFinishHour = null;
     form.planFinishDate = '';
+    form.planFinishDateTime = '';
     form.applyAuditId = null;
 }
 
@@ -80,10 +84,10 @@ async function getUserProjectList() {
     if (response && response.code === 200) {
         projectList.value = response.result;
     } else {
-        ElMessage({
-            message: '获取项目失败',
-            type: 'error',
-        });
+        // ElMessage({
+        //     message: '获取项目失败',
+        //     type: 'error',
+        // });
     }
 }
 
@@ -96,10 +100,10 @@ async function getTaskTypeList() {
     if (response && response.code === 200) {
         taskTypeList.value = response.result;
     } else {
-        ElMessage({
-            message: '获取任务类型失败',
-            type: 'error',
-        });
+        // ElMessage({
+        //     message: '获取任务类型失败',
+        //     type: 'error',
+        // });
     }
 }
 
@@ -112,10 +116,11 @@ async function getAuditUserList() {
     if (response && response.code === 200) {
         auditUserList.value = response.result;
     } else {
-        ElMessage({
-            message: '获取审批人失败',
-            type: 'error',
-        });
+        console.log('response ===', response);
+        // ElMessage({
+        //     message: '获取审批人失败',
+        //     type: 'error',
+        // });
     }
 }
 
@@ -175,11 +180,14 @@ async function createTaskBtn() {
         });
         return;
     }
-    // console.log('form.planFinishDate ===', form.planFinishDate);
 
     // 完成日期格式化
-    form.planFinishDate = getFormattedDate(form.planFinishDate);
+    form.planFinishDate = getFormattedDate(
+        form.planFinishDate,
+        form.planFinishDateTime,
+    );
 
+    console.log('form.planFinishDate ===', form.planFinishDate);
     try {
         const response = await createTask.fetchCreateTaskAction(form);
         // console.log(' Create 页面 response ===', response);
@@ -219,6 +227,14 @@ async function createTaskBtn() {
 const dialogWidth = computed(() => {
     return form.taskDescription.length > 500 ? '80%' : '50%';
 });
+
+/********************************\
+ * 时间传递（自定义事件）
+\********************************/
+const handleTimeUpdate = (time) => {
+    // console.log('Received update-time event with value:', time);
+    form.planFinishDateTime = time;
+};
 </script>
 
 <template>
@@ -304,14 +320,38 @@ const dialogWidth = computed(() => {
                     label="计划完成日期"
                     :label-width="formLabelWidth"
                 >
-                    <el-date-picker
-                        v-model="form.planFinishDate"
-                        type="date"
-                        placeholder="选择计划完成日期"
-                        style="width: 100%"
-                        :disabledDate="disabledPreviousDates"
-                    />
+                    <el-col :span="11">
+                        <el-date-picker
+                            v-model="form.planFinishDate"
+                            type="date"
+                            placeholder="请选择计划完成日期"
+                            style="width: 100%"
+                            :disabledDate="disabledPreviousDates"
+                        />
+                    </el-col>
+                    <el-col :span="2" style="text-align: center">
+                        <span>-</span>
+                    </el-col>
+                    <el-col :span="11">
+                        <!-- 只需要小时的情况 -->
+                        <!-- <el-select
+                            v-model="form.planFinishDateTime"
+                            placeholder="请选择小时"
+                            style="width: 100%"
+                        >
+                            <el-option
+                                v-for="n in 24"
+                                :key="n - 1"
+                                :label="`${n - 1} `"
+                                :value="n - 1"
+                            ></el-option>
+                        </el-select> -->
+                        <hour-and-min-select
+                            @update-time="handleTimeUpdate"
+                        ></hour-and-min-select>
+                    </el-col>
                 </el-form-item>
+
                 <!-- 任务描述 -->
                 <el-form-item
                     label="任务描述"
@@ -350,6 +390,10 @@ const dialogWidth = computed(() => {
 
 <style scoped lang="scss">
 @import '../../assets/css/variables.scss';
+
+.custom-time-select .el-scrollbar__wrap {
+    padding-right: 50px; /* 或更多，根据需要调整 */
+}
 
 .el-dialog__footer {
     text-align: right;

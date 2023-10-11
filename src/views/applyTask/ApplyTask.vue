@@ -62,9 +62,11 @@ import { disabledPreviousDates } from '@/utils/limit/limitDateSelect';
 // 任务描述验证
 import { validateDescriptionInput } from '@/utils/validate/validateDescript';
 // 创建按钮
-import Create from '@/components/create/Create.vue';
+import CreateTask from '@/components/create-task/CreateTask.vue';
 // 获取store中的userid
 import { useUserIdStore } from '@/store/public';
+// 导入时间&分钟选择
+import HourAndMinSelect from '@/components/hour-min-select/HourAndMinSelect.vue';
 
 /********************************\ 
  * 获取权限处理
@@ -149,6 +151,7 @@ const form = reactive({
     planFinishHour: null, // 计划完成小
     taskTypeId: null, // 任务类别 ID时数
     planFinishDate: '', // 计划完成日期
+    planFinishDateTime: '', // 计划完成日期时间
     applyAuditId: null, // 审批人ID
     id: chooseModifyId.value,
 });
@@ -191,7 +194,7 @@ async function getUserProjectList() {
     const response = await userProjectList.fetchUserProjectListAction(
         userIdStore.userId,
     );
-    console.log('项目idresponse ===', response);
+    // console.log('项目idresponse ===', response);
     if (response && response.code === 200) {
         projectList.value = response.result;
         // 根据 projectList 创建 projectNameMap
@@ -200,10 +203,10 @@ async function getUserProjectList() {
             return map;
         }, {});
     } else {
-        ElMessage({
-            message: response.message,
-            type: 'error',
-        });
+        // ElMessage({
+        //     message: response.message,
+        //     type: 'error',
+        // });
     }
 }
 
@@ -223,10 +226,10 @@ async function getTaskTypeList() {
             return map;
         }, {});
     } else {
-        ElMessage({
-            message: '获取任务类型失败',
-            type: 'error',
-        });
+        // ElMessage({
+        //     message: '获取任务类型失败',
+        //     type: 'error',
+        // });
     }
 }
 
@@ -246,10 +249,10 @@ async function getAuditUserList() {
             return map;
         }, {});
     } else {
-        ElMessage({
-            message: '获取审批人失败',
-            type: 'error',
-        });
+        // ElMessage({
+        //     message: '获取审批人失败',
+        //     type: 'error',
+        // });
     }
 }
 
@@ -286,7 +289,10 @@ async function modify() {
         return;
     }
     // 日期格式化
-    form.planFinishDate = getFormattedDate(form.planFinishDate);
+    form.planFinishDate = getFormattedDate(
+        form.planFinishDate,
+        form.planFinishDateTime,
+    );
 
     try {
         const response = await useUpdateTask.fetchUpdateTaskAction({
@@ -357,6 +363,7 @@ async function deleteTaskFun() {
             getEmployeeTasList(); // 重新获取数据
         } else {
             // 可以添加其他的错误处理逻辑
+            // console.log('出错了');
             ElMessage({
                 message: response.message,
                 type: 'error',
@@ -707,204 +714,216 @@ const dialogWidth = computed(() => {
 //        console.log('event.keyCode ===', event.keyCode)
 //     }
 // }
+/********************************\
+ * 时间传递（自定义事件）
+\********************************/
+const handleTimeUpdate = (time) => {
+    // console.log('Received update-time event with value:', time);
+    form.planFinishDateTime = time;
+};
 </script>
 
 <template>
     <div class="apply_container" v-if="authorityList.includes('WEB_TaskApply')">
         <div class="apply-box">
             <!-- 创建按钮 -->
-            <create class="apply-create"></create>
+            <create-task></create-task>
             <!-- vxe 表格 -->
-            <vxe-table
-                border
-                header-align="center"
-                :show-overflow="false"
-                max-height="520px"
-                :data="employeeTaskList"
-                :column-config="{ resizable: true, useKey: 'field' }"
-                :edit-config="{ trigger: 'click', mode: 'cell' }"
-                :row-config="{ useKey: 'id' }"
-                :scroll-y="{ enabled: false }"
-                round
-                @edit-actived="handleCellActivated"
-                @edit-closed="handleCellClosed"
-                :cell-config="{ selected: true }"
-                @cell-click="handleCellClick"
-                ref="xTable"
-                class="table"
-            >
-                <!-- 项目名称 -->
-                <vxe-column
-                    field="projectName"
-                    title="项目名称"
-                    :edit-render="{}"
-                    width="100px"
+
+            <div class="apply-content">
+                <vxe-table
+                    border
                     header-align="center"
-                    align="left"
+                    :show-overflow="false"
+                    max-height="520px"
+                    :data="employeeTaskList"
+                    :column-config="{ resizable: true, useKey: 'field' }"
+                    :edit-config="{ trigger: 'click', mode: 'cell' }"
+                    :row-config="{ useKey: 'id' }"
+                    :scroll-y="{ enabled: false }"
+                    round
+                    @edit-actived="handleCellActivated"
+                    @edit-closed="handleCellClosed"
+                    :cell-config="{ selected: true }"
+                    @cell-click="handleCellClick"
+                    ref="xTable"
+                    class="table"
                 >
-                    <template #default="{ row }">
-                        <span>{{ projectNameMap[row.projectId] || '' }}</span>
-                    </template>
-                    <template #edit="{ row }">
-                        <vxe-select
-                            v-model="row.projectId"
-                            type="text"
-                            transfer
-                            @change="singleUpdateProjectId(row)"
-                        >
-                            <vxe-option
-                                v-for="project in projectList"
-                                :key="project.id"
-                                :label="project.name"
-                                :value="project.id"
-                            />
-                        </vxe-select>
-                    </template>
-                </vxe-column>
-                <!-- 项目类型 -->
-                <vxe-column
-                    field="taskTypeName"
-                    title="任务类型"
-                    :edit-render="{}"
-                    width="100px"
-                    header-align="center"
-                    align="left"
-                >
-                    <template #default="{ row }">
-                        {{ taskTypeMap[row.taskTypeId] || '' }}
-                    </template>
-                    <template #edit="{ row }">
-                        <vxe-select
-                            v-model="row.taskTypeId"
-                            type="text"
-                            transfer
-                            @change="singleUpdateTaskTypeId(row)"
-                        >
-                            <vxe-option
-                                v-for="tasktype in taskTypeList"
-                                :key="tasktype.id"
-                                :label="tasktype.name"
-                                :value="tasktype.id"
-                            ></vxe-option>
-                        </vxe-select>
-                    </template>
-                </vxe-column>
-                <!-- 项目描述 -->
-                <vxe-column
-                    field="taskDescription"
-                    title="任务描述"
-                    :edit-render="{}"
-                    min-width="250px"
-                    header-align="center"
-                    align="left"
-                    class="wrap-content"
-                >
-                    <template #edit="{ row }">
-                        <vxe-input
-                            v-model="row.taskDescription"
-                            type="textarea"
-                        ></vxe-input>
-                    </template>
-                </vxe-column>
-                <!-- 计划完成小时数 -->
-                <vxe-column
-                    field="planFinishHour"
-                    title="计划完成小时数"
-                    :edit-render="{}"
-                    width="140px"
-                    header-align="center"
-                    align="right"
-                >
-                    <template #edit="{ row }">
-                        <vxe-input
-                            v-model="row.planFinishHour"
-                            type="text"
-                        ></vxe-input>
-                    </template>
-                </vxe-column>
-                <!-- 计划完成日期 -->
-                <vxe-column
-                    field="planFinishDate"
-                    title="计划完成日期"
-                    :edit-render="{}"
-                    width="130px"
-                    header-align="center"
-                    align="center"
-                >
-                    <template #default="{ row }">
-                        {{ getFormattedDateTwo(row.planFinishDate) }}
-                    </template>
-                    <!-- todo 表单数据的更改都应该用的store中持久化的数据，
+                    <!-- 项目名称 -->
+                    <vxe-column
+                        field="projectName"
+                        title="项目名称"
+                        :edit-render="{}"
+                        width="100px"
+                        header-align="center"
+                        align="left"
+                    >
+                        <template #default="{ row }">
+                            <span>
+                                {{ projectNameMap[row.projectId] || '' }}
+                            </span>
+                        </template>
+                        <template #edit="{ row }">
+                            <vxe-select
+                                v-model="row.projectId"
+                                type="text"
+                                transfer
+                                @change="singleUpdateProjectId(row)"
+                            >
+                                <vxe-option
+                                    v-for="project in projectList"
+                                    :key="project.id"
+                                    :label="project.name"
+                                    :value="project.id"
+                                />
+                            </vxe-select>
+                        </template>
+                    </vxe-column>
+                    <!-- 项目类型 -->
+                    <vxe-column
+                        field="taskTypeName"
+                        title="任务类型"
+                        :edit-render="{}"
+                        width="100px"
+                        header-align="center"
+                        align="left"
+                    >
+                        <template #default="{ row }">
+                            {{ taskTypeMap[row.taskTypeId] || '' }}
+                        </template>
+                        <template #edit="{ row }">
+                            <vxe-select
+                                v-model="row.taskTypeId"
+                                type="text"
+                                transfer
+                                @change="singleUpdateTaskTypeId(row)"
+                            >
+                                <vxe-option
+                                    v-for="tasktype in taskTypeList"
+                                    :key="tasktype.id"
+                                    :label="tasktype.name"
+                                    :value="tasktype.id"
+                                ></vxe-option>
+                            </vxe-select>
+                        </template>
+                    </vxe-column>
+                    <!-- 项目描述 -->
+                    <vxe-column
+                        field="taskDescription"
+                        title="任务描述"
+                        :edit-render="{}"
+                        min-width="250px"
+                        header-align="center"
+                        align="left"
+                        class="wrap-content"
+                    >
+                        <template #edit="{ row }">
+                            <vxe-input
+                                v-model="row.taskDescription"
+                                type="textarea"
+                            ></vxe-input>
+                        </template>
+                    </vxe-column>
+                    <!-- 计划完成小时数 -->
+                    <vxe-column
+                        field="planFinishHour"
+                        title="计划完成小时数"
+                        :edit-render="{}"
+                        width="140px"
+                        header-align="center"
+                        align="right"
+                    >
+                        <template #edit="{ row }">
+                            <vxe-input
+                                v-model="row.planFinishHour"
+                                type="text"
+                            ></vxe-input>
+                        </template>
+                    </vxe-column>
+                    <!-- 计划完成日期 -->
+                    <vxe-column
+                        field="planFinishDate"
+                        title="计划完成日期"
+                        :edit-render="{}"
+                        width="130px"
+                        header-align="center"
+                        align="center"
+                    >
+                        <template #default="{ row }">
+                            {{ getFormattedDateTwo(row.planFinishDate) }}
+                        </template>
+                        <!-- todo 表单数据的更改都应该用的store中持久化的数据，
                     而不是ref中的数据 这里v-module绑定的数据就有问题 20230919 -->
-                    <template #edit="{ row }">
-                        <vxe-input
-                            v-model="row.planFinishDate"
-                            type="date"
-                            placeholder="请选择计划完成日期"
-                            transfer
-                            :min-date="minDate"
-                        ></vxe-input>
-                        <!-- <el-date-picker
+                        <template #edit="{ row }">
+                            <vxe-input
+                                v-model="row.planFinishDate"
+                                type="date"
+                                placeholder="请选择计划完成日期"
+                                transfer
+                                :min-date="minDate"
+                            ></vxe-input>
+                            <!-- <el-date-picker
                             v-model="form.planFinishDate"
                             type="date"
                             placeholder="选择计划完成日期"
                             style="width: 100%"
                             :disabledDate="disabledPreviousDates"
                         /> -->
-                    </template>
-                </vxe-column>
-                <!-- 审批人 -->
-                <vxe-column
-                    field="applyAuditName"
-                    title="审批人"
-                    :edit-render="{}"
-                    width="100px"
-                    header-align="center"
-                    align="center"
-                >
-                    <template #default="{ row }">
-                        {{ auditUserMap[row.applyAuditId] || '' }}
-                    </template>
-                    <template #edit="{ row }">
-                        <vxe-select
-                            v-model="row.applyAuditId"
-                            type="text"
-                            transfer
-                            @change="singleUpdateAuditId(row)"
-                        >
-                            <vxe-option
-                                v-for="audit in auditUserList"
-                                :key="audit.id"
-                                :label="audit.nameEN"
-                                :value="audit.id"
-                            ></vxe-option>
-                        </vxe-select>
-                    </template>
-                </vxe-column>
-                <!-- 操作 -->
-                <vxe-column
-                    field="operate"
-                    title="操作"
-                    width="180px"
-                    header-align="center"
-                    align="center"
-                >
-                    <template #default="{ row }">
-                        <button
-                            @click="dialogFormVisibleFun(row.id)"
-                            class="update"
-                        >
-                            修改
-                        </button>
-                        <button
-                            @click="showDeleteDialogFun(row.id)"
-                            class="delete"
-                        >
-                            删除
-                        </button>
-                    </template>
-                </vxe-column>
-            </vxe-table>
+                        </template>
+                    </vxe-column>
+                    <!-- 审批人 -->
+                    <vxe-column
+                        field="applyAuditName"
+                        title="审批人"
+                        :edit-render="{}"
+                        width="100px"
+                        header-align="center"
+                        align="center"
+                    >
+                        <template #default="{ row }">
+                            {{ auditUserMap[row.applyAuditId] || '' }}
+                        </template>
+                        <template #edit="{ row }">
+                            <vxe-select
+                                v-model="row.applyAuditId"
+                                type="text"
+                                transfer
+                                @change="singleUpdateAuditId(row)"
+                            >
+                                <vxe-option
+                                    v-for="audit in auditUserList"
+                                    :key="audit.id"
+                                    :label="audit.nameEN"
+                                    :value="audit.id"
+                                ></vxe-option>
+                            </vxe-select>
+                        </template>
+                    </vxe-column>
+                    <!-- 操作 -->
+                    <vxe-column
+                        field="operate"
+                        title="操作"
+                        width="180px"
+                        header-align="center"
+                        align="center"
+                    >
+                        <template #default="{ row }">
+                            <button
+                                @click="dialogFormVisibleFun(row.id)"
+                                class="update"
+                            >
+                                修改
+                            </button>
+                            <button
+                                @click="showDeleteDialogFun(row.id)"
+                                class="delete"
+                            >
+                                删除
+                            </button>
+                        </template>
+                    </vxe-column>
+                </vxe-table>
+            </div>
         </div>
 
         <!-- 修改的弹出框 -->
@@ -982,13 +1001,22 @@ const dialogWidth = computed(() => {
                     label="计划完成日期"
                     :label-width="formLabelWidth"
                 >
-                    <el-date-picker
-                        v-model="form.planFinishDate"
-                        type="date"
-                        placeholder="选择计划完成日期"
-                        style="width: 100%"
-                        :disabledDate="disabledPreviousDates"
-                    />
+                    <el-col :span="11">
+                        <el-date-picker
+                            v-model="form.planFinishDate"
+                            type="date"
+                            placeholder="选择计划完成日期"
+                            style="width: 100%"
+                            :disabledDate="disabledPreviousDates"
+                        />
+                    </el-col>
+                    <el-col :span="2" style="text-align: center">-</el-col>
+                    <el-col :span="11">
+                        <hour-and-min-select
+                            :selected-time="form.planFinishDate"
+                            @update-time="handleTimeUpdate"
+                        ></hour-and-min-select>
+                    </el-col>
                 </el-form-item>
                 <!-- 任务描述 -->
                 <el-form-item
@@ -1066,10 +1094,9 @@ const dialogWidth = computed(() => {
         margin-inline: 16px;
         background-color: #fff;
         border-radius: 2px;
-
-        .table {
-            margin: 0 21px 10px 21px;
-        }
+    }
+    .table {
+        margin: 0 21px 10px 21px;
     }
 
     .update,

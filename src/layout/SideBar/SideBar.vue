@@ -46,6 +46,15 @@ function approvalTask() {
         path: '/dashboard/approval',
     });
 }
+/********************************\ 
+ * urllist
+\********************************/
+function urllist() {
+    // console.log('点击审批人');
+    router.push({
+        path: '/dashboard/urllist',
+    });
+}
 
 /********************************\ 
  * 处理选中的内容
@@ -56,6 +65,9 @@ const isApplyRouteActive = computed(() => {
 
 const isApprovalRouteActive = computed(() => {
     return route.path === '/dashboard/approval';
+});
+const isURLListRouteActive = computed(() => {
+    return route.path === '/dashboard/urllist';
 });
 </script>
 
@@ -81,6 +93,16 @@ const isApprovalRouteActive = computed(() => {
             >
                 <el-icon><Checked /></el-icon>
                 <span>任务审批</span>
+            </el-menu-item>
+            <!-- urllist -->
+            <el-menu-item
+                index="3"
+                @click="urllist"
+                v-if="authorityList.includes('WEB_URLList')"
+                :class="{ 'active-route': isURLListRouteActive }"
+            >
+                <el-icon><Checked /></el-icon>
+                <span>URLList</span>
             </el-menu-item>
         </el-menu>
     </div>
