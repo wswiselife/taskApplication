@@ -317,7 +317,7 @@ async function modify() {
         } else {
             // 可以添加其他的错误处理逻辑
             ElMessage({
-                message: response.meaasge,
+                message: response.message,
                 type: 'error',
             });
         }
