@@ -12,7 +12,7 @@ import { getFormattedDateThree } from '@/utils/format/formatDate';
 /********************************\
  * 公共引入处理
 \********************************/
-const selectedHour = ref('00'); // 初始化为 '00'
+const selectedHour = ref('12'); // 初始化为 '00'
 const selectedMinute = ref('00'); // 初始化为 '00'
 
 const combinedTime = computed(() => {
@@ -66,6 +66,9 @@ watchEffect(() => {
         selectedValue.value = getFormattedDateThree(props.selectedTime);
     }
 });
+/********************************\
+ * 清空下拉框处理
+\********************************/
 </script>
 
 <template>

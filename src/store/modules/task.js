@@ -134,8 +134,8 @@ export const useDeleteTaskStore = defineStore('useDelete', {
     //     }
     // },
     actions: {
-        async fetchDeleteTaskAction(currentId) {
-            const response = await deleteTaskData(currentId);
+        async fetchDeleteTaskAction(data) {
+            const response = await deleteTaskData(data);
             return response;
         },
     },

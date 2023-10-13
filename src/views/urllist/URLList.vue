@@ -9,12 +9,16 @@ import { storeToRefs } from 'pinia';
 import CreateURL from '@/components/create-url/CreateURL.vue';
 import { useIsCreatedURLStore } from '@/store/public';
 import { ElMessage } from 'element-plus';
+import { useRouter } from 'vue-router';
+
 /********************************\
  * 公共引入处理
 \********************************/
 onMounted(() => {
     getURLList();
 });
+
+const router = useRouter();
 /********************************\
  * 获取权限处理
 \********************************/
@@ -29,8 +33,10 @@ onMounted(() => {
 /********************************\
  * 获取urllist
 \********************************/
-async function getURLList() {
-    await getURLListStore.fetchGetURLListAction();
+function getURLList() {
+    // await getURLListStore.fetchGetURLListAction();
+    getURLListStore.fetchGetURLListAction();
+    // console.log('网站管理 urllist ===', urllist);
 }
 const getURLListStore = useGetURLListStore();
 // urllist 列表渲染
@@ -71,6 +77,7 @@ const updateURLDialogBtn = (currentId) => {
 /********************************\
  * 修改 urllist
 \********************************/
+const formLabelWidth = '100px';
 const form = reactive({
     url: '',
     description: '',
@@ -84,14 +91,32 @@ const updateURLFun = async () => {
     // 发送请求
     const response = await updateURLListStore.fetchUpdteURLListAction(form);
     // console.log('update response ===', response);
+
+    if (response && response.code === 401) {
+        ElMessage({
+            type: 'error',
+            message: response.message,
+        });
+        router.push({ path: '/login' });
+        // 禁止浏览器的后退功能
+        window.addEventListener('popstate', function () {
+            history.go(1);
+        });
+    }
+
     if (response && response.code === 200) {
         ElMessage({
             type: 'success',
-            message: '修改URLList成功',
+            message: `说明为${form.description}的网址修改成功。`,
         });
         // 重新渲染列表
         getURLList();
         updateDialogVisible.value = false;
+    } else {
+        ElMessage({
+            type: 'error',
+            message: response.message,
+        });
     }
 };
 /********************************\
@@ -100,9 +125,19 @@ const updateURLFun = async () => {
 //控制dialog显示或隐藏
 const deleteDialogVisible = ref(false);
 const deleteCurrentId = ref();
+const deleteDescription = ref('');
 const deleteURLDialogBtn = (currentId) => {
     deleteDialogVisible.value = true;
     deleteCurrentId.value = currentId;
+    // 获取id之后，找到说明并存储
+    // 获取 auditTaskList 中的完成时间和完成小时数
+    const selectedItem = urllist.value.find(
+        (item) => item.id === deleteCurrentId.value,
+    );
+    if (selectedItem) {
+        // 更新form对象的值
+        deleteDescription.value = selectedItem.description;
+    }
 };
 /********************************\
  * 删除 urllist
@@ -118,7 +153,7 @@ const deleteURLFun = async () => {
         if (response && response.code === 200) {
             ElMessage({
                 type: 'success',
-                message: 'URLList删除成功',
+                message: `说明为${deleteDescription.value}的网址删除成功`,
             });
             getURLList();
             deleteDialogVisible.value = false;
@@ -144,25 +179,30 @@ const deleteURLFun = async () => {
                     :column-config="{ resizable: true, useKey: 'field' }"
                     border
                     max-height="520px"
+                    :row-config="{ useKey: 'id' }"
                     :scroll-y="{ enabled: false }"
                     round
                 >
                     <vxe-column
                         field="description"
-                        title="描述内容"
+                        title="网址说明"
                         :edit-render="{}"
-                        width="50% -90px"
+                        width="250px"
                         header-align="center"
                         align="left"
                     ></vxe-column>
                     <vxe-column
                         field="url"
-                        title="url地址"
+                        title="网址"
                         :edit-render="{}"
-                        width="50%-90px"
+                        min-width="250px"
                         header-align="center"
-                        align="center"
-                    ></vxe-column>
+                        align="left"
+                    >
+                        <template #default="{ row }">
+                            <a :href="row.url" target="_blank">{{ row.url }}</a>
+                        </template>
+                    </vxe-column>
                     <!-- 操作 -->
                     <vxe-column
                         field="operate"
@@ -191,30 +231,26 @@ const deleteURLFun = async () => {
         </div>
 
         <!-- 修改弹出框 -->
-        <el-dialog
-            title="修改URLList"
-            v-model="updateDialogVisible"
-            modal="true"
-        >
+        <el-dialog title="网址修改" v-model="updateDialogVisible" modal="true">
             <el-form :model="form">
                 <!-- 描述内容 -->
                 <el-form-item
-                    label="描述内容"
+                    label="网址说明"
                     prop="description"
                     :label-width="formLabelWidth"
                 >
                     <el-input
                         v-model="form.description"
-                        placeholder="请填写描述内容"
+                        placeholder="请填写网址说明"
                     />
                 </el-form-item>
                 <!-- url -->
                 <el-form-item
-                    label="url地址"
+                    label="网址"
                     prop="url"
                     :label-width="formLabelWidth"
                 >
-                    <el-input v-model="form.url" placeholder="请填写url地址" />
+                    <el-input v-model="form.url" placeholder="请填写网址" />
                 </el-form-item>
             </el-form>
             <template #footer>
@@ -237,8 +273,8 @@ const deleteURLFun = async () => {
         </el-dialog>
 
         <!-- 确定删除提示框 -->
-        <el-dialog v-model="deleteDialogVisible" title="URLList删除">
-            确定删除URLList吗
+        <el-dialog v-model="deleteDialogVisible" title="网址删除">
+            {{ `请确认是否删除说明为${deleteDescription}的网址？` }}
             <template #footer>
                 <span class="dialog-footer">
                     <el-button

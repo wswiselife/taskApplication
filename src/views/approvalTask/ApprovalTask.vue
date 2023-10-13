@@ -12,9 +12,10 @@ import {
     useAgreeTaskStore,
     useUserProjectListStore,
     useTaskTypeListStore,
+    useDeleteTaskStore,
 } from '@/store/modules/task';
 import { storeToRefs } from 'pinia';
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, computed } from 'vue';
 import { ElMessage } from 'element-plus';
 import {
     getFormattedDate,
@@ -59,6 +60,8 @@ onMounted(() => {
 const userProjectList = useUserProjectListStore();
 const useTaskTypeList = useTaskTypeListStore();
 const userIdStore = useUserIdStore();
+// 假删除接口数据
+const deleteTask = useDeleteTaskStore();
 
 // todo 这里其实是获取申请人的用户的权限，现在可以暂时这么做，但是当表格的数据需要修改的时候，
 // 我们就要真正的获取申请人的权限，然后做映射，在表格中显示对应的项目名称、任务类型或申请人
@@ -69,7 +72,7 @@ const userIdStore = useUserIdStore();
 const projectList = ref([]);
 const projectNameMap = ref({}); // 记录映射关系
 async function getUserProjectList() {
-    console.log('userIdStore.userId ===', userIdStore.userId);
+    // console.log('userIdStore.userId ===', userIdStore.userId);
     const response = await userProjectList.fetchUserProjectListAction(
         userIdStore.userId,
     );
@@ -113,29 +116,6 @@ async function getTaskTypeList() {
 }
 
 /********************************\
- * 获取申请人
-\********************************/
-// const auditUserList = ref([]);
-// const auditUserMap = ref({});
-// async function getAuditUserList() {
-//     const response = await useAuditTypeList.fetchAuditUserListAction();
-//     // console.log('审批人response ===', response);
-//     if (response && response.code === 200) {
-//         auditUserList.value = response.result;
-//         // 根据 auditUserList 创建 auditUserMap
-//         auditUserMap.value = response.result.reduce((map, auditUser) => {
-//             map[auditUser.id] = auditUser.nameEN;
-//             return map;
-//         }, {});
-//     } else {
-//         ElMessage({
-//             message: '获取审批人失败',
-//             type: 'error',
-//         });
-//     }
-// }
-
-/********************************\
  * 获取审批列表接口
 \********************************/
 function getAuditUserData() {
@@ -155,6 +135,13 @@ const form = reactive({
     finishDate: '',
     finishDateTime: '',
     finishHour: null,
+    taskDescription: '',
+});
+
+const onlyShow = reactive({
+    employeeName: '',
+    projectName: '',
+    taskTypeName: '',
 });
 
 /********************************\
@@ -176,6 +163,11 @@ function showAgreeDialogFun(currentId) {
         // 更新form对象的值
         form.finishDate = selectedItem.planFinishDate;
         form.finishHour = selectedItem.planFinishHour;
+        form.taskDescription = selectedItem.taskDescription;
+        // 只需要显示的内容（申请人、项目名称、任务类型）
+        onlyShow.employeeName = selectedItem.employeeName;
+        onlyShow.projectName = selectedItem.projectName;
+        onlyShow.taskTypeName = selectedItem.taskTypeName;
     }
 }
 
@@ -216,12 +208,13 @@ async function agreeFun() {
     try {
         // 获取审批接口
         const response = await useAgreeTask.fetchAgreeTaskAction(form);
+        // console.log('审批成功后的 response ===', response);
         if (response && response.code === 200) {
             // 清除弹出框
             showAgreeDialog.value = false;
             // 提示成功
             ElMessage({
-                message: '任务审批成功',
+                message: `任务审批成功，任务编号为${response.result.code}。`,
                 type: 'success',
             });
             // 清空输入的点数
@@ -250,6 +243,12 @@ async function agreeFun() {
 /********************************\
  * 日期选择限制//todo
 \********************************/
+/********************************\
+ * 完整显示1000字符
+\********************************/
+const dialogWidth = computed(() => {
+    return form.taskDescription.length > 500 ? '80%' : '50%';
+});
 
 /********************************\
  * 时间传递（自定义事件）
@@ -258,6 +257,54 @@ const handleTimeUpdate = (time) => {
     // console.log('Received update-time event with value:', time);
     form.finishDateTime = time;
 };
+
+/********************************\
+ * 弹出删除提示框
+\********************************/
+const showDeleteDialog = ref(false);
+const chooseDeleteId = ref(null);
+function showDeleteDialogFun(currentId) {
+    showDeleteDialog.value = true;
+    chooseDeleteId.value = currentId;
+}
+
+/********************************\
+ * 假删除
+\********************************/
+async function deleteTaskFun() {
+    try {
+        const type = 2;
+        const response = await deleteTask.fetchDeleteTaskAction({
+            currentId: chooseDeleteId.value,
+            // 直接多传递一个type
+            type,
+        });
+
+        // console.log('删除的 response ===', response);
+        if (response && response.code === 200) {
+            // 清除对话框
+            showDeleteDialog.value = false;
+            // 提示新建完成
+            ElMessage({
+                message: '任务删除成功',
+                type: 'success',
+            });
+            // 重新获取数据
+            getAuditUserData();
+        } else {
+            ElMessage({
+                message: response.message,
+                type: 'error',
+            });
+        }
+    } catch (error) {
+        console.log('error ===', error);
+        ElMessage({
+            message: '删除失败',
+            type: 'error',
+        });
+    }
+}
 </script>
 
 <template>
@@ -416,7 +463,13 @@ const handleTimeUpdate = (time) => {
                             @click="showAgreeDialogFun(row.id)"
                             class="agree"
                         >
-                            同意
+                            审批
+                        </button>
+                        <button
+                            @click="showDeleteDialogFun(row.id)"
+                            class="delete"
+                        >
+                            删除
                         </button>
                     </template>
                 </vxe-column>
@@ -424,12 +477,30 @@ const handleTimeUpdate = (time) => {
         </div>
 
         <!-- 申请审批 -->
-        <el-dialog v-model="showAgreeDialog" title="任务申请审批" modal="true">
+        <el-dialog
+            v-model="showAgreeDialog"
+            title="任务申请审批"
+            modal="true"
+            :width="dialogWidth"
+        >
             <el-form :model="form">
+                <el-form-item :label-width="40">
+                    <el-col :span="8">
+                        申请人：{{ onlyShow.employeeName }}
+                    </el-col>
+                    <el-col :span="8">
+                        任务类型：{{ onlyShow.taskTypeName }}
+                    </el-col>
+                    <el-col :span="8">
+                        项目名称：{{ onlyShow.projectName }}
+                    </el-col>
+                </el-form-item>
+
                 <!-- 任务点数 -->
                 <el-form-item label="任务点数" prop="point" :label-width="120">
                     <el-input type="text" v-model="form.point" />
                 </el-form-item>
+
                 <!-- 计划完成小时数 -->
                 <el-form-item
                     label="计划完成小时数"
@@ -473,6 +544,17 @@ const handleTimeUpdate = (time) => {
                         ></hour-and-min-select>
                     </el-col>
                 </el-form-item>
+
+                <!-- 任务描述 -->
+                <el-form-item label="任务描述" prop="desc" label-width="120">
+                    <el-input
+                        type="textarea"
+                        :autosize="{ minRows: 2, maxRows: 10 }"
+                        :maxlength="1000"
+                        v-model="form.taskDescription"
+                        placeholder="请填写任务描述"
+                    ></el-input>
+                </el-form-item>
             </el-form>
 
             <template #footer>
@@ -488,7 +570,29 @@ const handleTimeUpdate = (time) => {
                         @click="agreeFun"
                         class="btn-sure"
                     >
-                        确定
+                        同意
+                    </el-button>
+                </span>
+            </template>
+        </el-dialog>
+
+        <!-- 确定删除提示框 -->
+        <el-dialog v-model="showDeleteDialog" title="任务申请删除">
+            请确认是否删除任务申请
+            <template #footer>
+                <span class="dialog-footer">
+                    <el-button
+                        @click="showDeleteDialog = false"
+                        class="btn-cancel"
+                    >
+                        取消
+                    </el-button>
+                    <el-button
+                        type="primary"
+                        @click="deleteTaskFun"
+                        class="btn-sure"
+                    >
+                        确认
                     </el-button>
                 </span>
             </template>
@@ -533,6 +637,31 @@ const handleTimeUpdate = (time) => {
         color: #ffffff;
         background: #1768e4;
         cursor: pointer;
+    }
+
+    .delete {
+        border: none;
+        border-radius: 2px;
+        width: 54px;
+        height: 26px;
+    }
+
+    .delete {
+        background-color: #ffecec;
+        font-size: 12px;
+        font-family: Microsoft YaHei;
+        font-weight: 400;
+        color: #e41731;
+    }
+
+    .delete:hover {
+        color: #fff;
+        background-color: #ed5b5d;
+        cursor: pointer;
+    }
+
+    .agree {
+        margin-right: 11px;
     }
 
     .el-button.btn-cancel {

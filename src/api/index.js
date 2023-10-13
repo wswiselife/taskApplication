@@ -7,6 +7,7 @@
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
 import axios from 'axios';
+// import { ElMessage } from 'element-plus';
 //引入nprogress 进度条插件
 import NProgress from 'nprogress';
 // 路由跳转
@@ -21,7 +22,7 @@ const router = useRouter();
 
 const request = axios.create({
     baseURL: import.meta.env.VITE_API_URL,
-    timeout: 5000,
+    timeout: 10000,
 });
 
 // 请求拦截器
@@ -31,6 +32,7 @@ request.interceptors.request.use(
         // console.log('Request interceptor called');
         NProgress.start();
         const token = localStorage.getItem('token');
+        // 为什么拦截401？token 过期问题
         if (token) {
             config.headers['Authorization'] = `Bearer ${token}`;
         }
@@ -49,7 +51,7 @@ request.interceptors.response.use(
         // 关闭进度条
         // console.log('Response interceptor called');
         NProgress.done();
-        // console.log('axios 拦截器 response.data ===', response.data);
+        // console.log('response.data ===', response.data);
         if (response.status === 200) {
             return response.data;
         } else {
@@ -64,7 +66,7 @@ request.interceptors.response.use(
             // 重新登录逻辑
             localStorage.removeItem('token'); // 清除 token
             router.push({ path: '/login' }); // 重定向到登录页面
-            console.log('请重新登录');
+            // console.log('请重新登录');
         }
         return Promise.reject(error);
     },

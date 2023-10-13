@@ -68,7 +68,7 @@ import { useUserIdStore } from '@/store/public';
 // 导入时间&分钟选择
 import HourAndMinSelect from '@/components/hour-min-select/HourAndMinSelect.vue';
 
-/********************************\ 
+/********************************\
  * 获取权限处理
 \********************************/
 const authorityList = ref([]);
@@ -347,9 +347,12 @@ function showDeleteDialogFun(currentId) {
 \********************************/
 async function deleteTaskFun() {
     try {
-        const response = await deleteTask.fetchDeleteTaskAction(
-            chooseDeleteId.value,
-        );
+        const type = 1;
+        const response = await deleteTask.fetchDeleteTaskAction({
+            currentId: chooseDeleteId.value,
+            // 直接多传递一个type
+            type,
+        });
 
         // console.log('删除的 response ===', response);
         if (response && response.code === 200) {
@@ -811,7 +814,6 @@ const handleTimeUpdate = (time) => {
                     <vxe-column
                         field="taskDescription"
                         title="任务描述"
-                        :edit-render="{}"
                         min-width="250px"
                         header-align="center"
                         align="left"
@@ -844,7 +846,6 @@ const handleTimeUpdate = (time) => {
                     <vxe-column
                         field="planFinishDate"
                         title="计划完成日期"
-                        :edit-render="{}"
                         width="130px"
                         header-align="center"
                         align="center"

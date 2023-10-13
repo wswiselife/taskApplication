@@ -65,11 +65,11 @@ export const getUpdateTaskData = (data) => {
 /********************************\
  * 假删除申请
 \********************************/
-export const deleteTaskData = (currentId) => {
-    return request.post('/jsy/TaskApply/DeleteTaskApply', null, {
-        params: {
-            pId: currentId,
-        },
+export const deleteTaskData = (data) => {
+    // console.log('data ===', data);
+    return request.post('/jsy/TaskApply/DeleteTaskApply', {
+        id: data.currentId,
+        type: data.type,
     });
 };
 
@@ -83,5 +83,6 @@ export const agreeTaskData = (data) => {
         taskPoints: data.point,
         planFinishDate: data.finishDate,
         planFinishHour: data.finishHour,
+        taskDescription: data.taskDescription,
     });
 };

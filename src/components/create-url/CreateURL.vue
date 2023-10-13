@@ -3,9 +3,11 @@ import { ref, reactive } from 'vue';
 import { useAddURLListStore } from '@/store/modules/urllist.js';
 import { ElMessage } from 'element-plus';
 import { useIsCreatedURLStore } from '@/store/public';
+import { useRouter } from 'vue-router';
 /********************************\
  * 公共引入处理
 \********************************/
+const router = useRouter();
 /********************************\
  * 控制弹出层表单显示隐藏
 \********************************/
@@ -26,7 +28,7 @@ const isCreateStoreURL = useIsCreatedURLStore();
 \********************************/
 const addURLListStore = useAddURLListStore();
 
-const formLabelWidth = '120px';
+const formLabelWidth = '100px';
 const form = reactive({
     url: '',
     description: '',
@@ -37,9 +39,19 @@ function resetForm() {
 }
 
 async function createURLBtn() {
-    console.log('form ===', form);
     const response = await addURLListStore.fetchAddURLListAction(form);
     // console.log('add response ===', response);
+    if (response && response.code === 401) {
+        ElMessage({
+            type: 'error',
+            message: response.message,
+        });
+        router.push({ path: '/login' });
+        // 禁止浏览器的后退功能
+        window.addEventListener('popstate', function () {
+            history.go(1);
+        });
+    }
     if (response && response.code === 200) {
         // 关闭对话框
         dialogFormVisible.value = false;
@@ -47,11 +59,16 @@ async function createURLBtn() {
         isCreateStoreURL.setIsCreatedURL(true);
         // 提示新建完成
         ElMessage({
-            message: 'url新增成功',
+            message: `说明为${form.description}的网址新增成功。`,
             type: 'success',
         });
         // 清除所有数据
         resetForm();
+    } else {
+        ElMessage({
+            type: 'error',
+            message: response.message,
+        });
     }
 }
 </script>
@@ -63,29 +80,29 @@ async function createURLBtn() {
         <!-- 弹出框 -->
         <el-dialog
             v-model="dialogFormVisible"
-            title="URL新增"
+            title="网址新增"
             modal="true"
             class="dialog-content"
         >
             <el-form :model="form">
                 <!-- 描述内容 -->
                 <el-form-item
-                    label="描述内容"
+                    label="网址说明"
                     prop="description"
                     :label-width="formLabelWidth"
                 >
                     <el-input
                         v-model="form.description"
-                        placeholder="请填写描述内容"
+                        placeholder="请填写网址说明"
                     />
                 </el-form-item>
                 <!-- url -->
                 <el-form-item
-                    label="url地址"
+                    label="网址"
                     prop="url"
                     :label-width="formLabelWidth"
                 >
-                    <el-input v-model="form.url" placeholder="请填写url地址" />
+                    <el-input v-model="form.url" placeholder="请填写网址" />
                 </el-form-item>
             </el-form>
             <template #footer>

@@ -101,8 +101,8 @@ const isURLListRouteActive = computed(() => {
                 v-if="authorityList.includes('WEB_URLList')"
                 :class="{ 'active-route': isURLListRouteActive }"
             >
-                <el-icon><Checked /></el-icon>
-                <span>URLList</span>
+                <el-icon><Platform /></el-icon>
+                <span>网址管理</span>
             </el-menu-item>
         </el-menu>
     </div>

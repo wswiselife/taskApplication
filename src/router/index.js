@@ -75,16 +75,24 @@ router.beforeEach((to, from, next) => {
     if (to.matched.some((record) => record.meta.requiresAuth)) {
         // 用户未登录
         if (!token) {
-            next('/login');
+            // 记录位置
+            sessionStorage.setItem('redirectPath', to.fullPath);
+            router.replace('/login');
             return;
         }
 
         // 检查用户是否有访问该路由的权限
         if (to.meta.authority && !authorityList.includes(to.meta.authority)) {
             // 如果用户没有权限，导航回他们之前的页面
-            next(from.path);
+            router.replace(from.path);
             return;
         }
+    }
+
+    // 如果用户从登录页面尝试返回
+    if (from.path === '/login' && to.path !== '/login' && !token) {
+        router.replace('/login');
+        return;
     }
 
     // 允许导航

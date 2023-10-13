@@ -32,6 +32,7 @@ import { useUserIdStore } from '@/store/public';
 const userIdStore = useUserIdStore();
 // 导入时间&分钟选择
 import HourAndMinSelect from '@/components/hour-min-select/HourAndMinSelect.vue';
+import router from '@/router';
 
 /********************************\
  * 表单数据定义
@@ -62,32 +63,42 @@ function resetForm() {
 \********************************/
 const dialogFormVisible = ref(false);
 const formLabelWidth = '120px';
+const isTokenExpires = ref(false);
 // 点击创建按钮发送请求，获取权限接口数据
-function dialogFormVisibleFun() {
+async function dialogFormVisibleFun() {
     // 打开对话框
     dialogFormVisible.value = true;
     // 调用用户权限项目接口
-    getUserProjectList();
+    await getUserProjectList();
     // 调用获取权限任务类型接口
-    getTaskTypeList();
+    await getTaskTypeList();
     // 调用权限审批人接口
-    getAuditUserList();
+    await getAuditUserList();
 }
 /********************************\
  * 获取用户有权限的项目ID
 \********************************/
 const projectList = ref([]);
 async function getUserProjectList() {
+    if (isTokenExpires.value) return;
     const response = await userProjectList.fetchUserProjectListAction(
         userIdStore.userId,
     );
-    if (response && response.code === 200) {
+
+    if (response && response.code === 401) {
+        isTokenExpires.value = true;
+        ElMessage({
+            message: response.message,
+            type: 'error',
+        });
+        router.replace({ path: '/login' });
+    } else if (response && response.code === 200) {
         projectList.value = response.result;
     } else {
-        // ElMessage({
-        //     message: '获取项目失败',
-        //     type: 'error',
-        // });
+        ElMessage({
+            message: '获取项目失败',
+            type: 'error',
+        });
     }
 }
 
@@ -96,14 +107,23 @@ async function getUserProjectList() {
 \********************************/
 const taskTypeList = ref([]);
 async function getTaskTypeList() {
+    if (isTokenExpires.value) return;
     const response = await useTaskTypeList.fetchTaskTypeListAction();
-    if (response && response.code === 200) {
+    if (response && response.code === 401) {
+        isTokenExpires.value = true;
+        ElMessage({
+            message: response.message,
+            type: 'error',
+        });
+        router.replace({ path: '/login' });
+        return;
+    } else if (response && response.code === 200) {
         taskTypeList.value = response.result;
     } else {
-        // ElMessage({
-        //     message: '获取任务类型失败',
-        //     type: 'error',
-        // });
+        ElMessage({
+            message: '获取任务类型失败',
+            type: 'error',
+        });
     }
 }
 
@@ -112,15 +132,24 @@ async function getTaskTypeList() {
 \********************************/
 const auditUserList = ref([]);
 async function getAuditUserList() {
+    if (isTokenExpires.value) return;
     const response = await useAuditTypeList.fetchAuditUserListAction();
-    if (response && response.code === 200) {
+    if (response && response.code === 401) {
+        isTokenExpires.value = true;
+        ElMessage({
+            message: response.message,
+            type: 'error',
+        });
+        router.replace({ path: '/login' });
+        return;
+    } else if (response && response.code === 200) {
         auditUserList.value = response.result;
     } else {
         console.log('response ===', response);
-        // ElMessage({
-        //     message: '获取审批人失败',
-        //     type: 'error',
-        // });
+        ElMessage({
+            message: '获取审批人失败',
+            type: 'error',
+        });
     }
 }
 
@@ -191,6 +220,15 @@ async function createTaskBtn() {
     try {
         const response = await createTask.fetchCreateTaskAction(form);
         // console.log(' Create 页面 response ===', response);
+
+        if (response && response.code === 401) {
+            ElMessage({
+                message: response.message,
+                type: 'success',
+            });
+            router.push({ path: '/login' });
+        }
+
         if (response && response.code === 200) {
             // 关闭对话框
             dialogFormVisible.value = false;
