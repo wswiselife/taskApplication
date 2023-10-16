@@ -129,7 +129,7 @@ watchEffect(() => {
 
 .hour-section,
 .minute-section {
-    width: 80px;
+    width: 90px;
     text-align: center;
 }
 .hour-section {
@@ -142,10 +142,5 @@ watchEffect(() => {
 .minute-section > div:first-child {
     line-height: 2; /* 调整行高以与选项对齐 */
     margin-bottom: 5px; /* 根据需要微调间距 */
-}
-
-.minute-section {
-    width: 70px; /* 调整宽度 */
-    text-align: center;
 }
 </style>

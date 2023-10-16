@@ -56,6 +56,7 @@ const eslintPlugin = require('vite-plugin-eslint').default;
 const path = require('path');
 
 module.exports = defineConfig({
+    base: './',
     plugins: [
         vue(),
         eslintPlugin({
