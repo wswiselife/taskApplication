@@ -20,6 +20,7 @@ import { ElMessage } from 'element-plus';
 import {
     getFormattedDate,
     getFormattedDateTwo,
+    getFormattedDateThree,
 } from '@/utils/format/formatDate';
 // import { formatProjectName, formatTaskType } from '@/assets/data/vxeColumnData';
 // import { disabledPreviousDates } from '@/utils/limitDateSelect';
@@ -31,7 +32,7 @@ import { validatePoint } from '@/utils/validate/validatePoint';
 // 获取项目id
 import { useUserIdStore } from '@/store/public';
 // 导入时间&分钟选择
-import HourAndMinSelect from '@/components/hour-min-select/HourAndMinSelect.vue';
+// import HourAndMinSelect from '@/components/hour-min-select/HourAndMinSelect.vue';
 
 /********************************\
  * 获取权限处理
@@ -164,11 +165,20 @@ function showAgreeDialogFun(currentId) {
         form.finishDate = selectedItem.planFinishDate;
         form.finishHour = selectedItem.planFinishHour;
         form.taskDescription = selectedItem.taskDescription;
+        form.finishDateTime = getFormattedDateThree(
+            selectedItem.planFinishDate,
+        );
         // 只需要显示的内容（申请人、项目名称、任务类型）
         onlyShow.employeeName = selectedItem.employeeName;
         onlyShow.projectName = selectedItem.projectName;
         onlyShow.taskTypeName = selectedItem.taskTypeName;
     }
+}
+/********************************\
+ * 清除点数（关闭时、成功时）
+\********************************/
+function resetForm() {
+    form.point = '';
 }
 
 /********************************\
@@ -218,7 +228,7 @@ async function agreeFun() {
                 type: 'success',
             });
             // 清空输入的点数
-            form.point = null;
+            resetForm();
             // 重新发送请求
             useAuditTaskList.fetchAuditTaskAction();
         } else {
@@ -253,10 +263,10 @@ const dialogWidth = computed(() => {
 /********************************\
  * 时间传递（自定义事件）
 \********************************/
-const handleTimeUpdate = (time) => {
-    // console.log('Received update-time event with value:', time);
-    form.finishDateTime = time;
-};
+// const handleTimeUpdate = (time) => {
+//     // console.log('Received update-time event with value:', time);
+//     form.finishDateTime = time;
+// };
 
 /********************************\
  * 弹出删除提示框
@@ -305,6 +315,13 @@ async function deleteTaskFun() {
         });
     }
 }
+/********************************\
+ * 焦点控制
+\********************************/
+const pointRef = ref(null);
+const focusInput = () => {
+    pointRef.value.focus();
+};
 </script>
 
 <template>
@@ -482,6 +499,8 @@ async function deleteTaskFun() {
             title="任务申请审批"
             modal="true"
             :width="dialogWidth"
+            @close="resetForm"
+            @opened="focusInput"
         >
             <el-form :model="form">
                 <el-form-item :label-width="40">
@@ -498,7 +517,7 @@ async function deleteTaskFun() {
 
                 <!-- 任务点数 -->
                 <el-form-item label="任务点数" prop="point" :label-width="120">
-                    <el-input type="text" v-model="form.point" />
+                    <el-input type="text" v-model="form.point" ref="pointRef" />
                 </el-form-item>
 
                 <!-- 计划完成小时数 -->
@@ -537,11 +556,19 @@ async function deleteTaskFun() {
                                 :value="n - 1"
                             ></el-option>
                         </el-select> -->
-
+                        <!-- 
                         <hour-and-min-select
                             :selected-time="form.finishDate"
                             @update-time="handleTimeUpdate"
-                        ></hour-and-min-select>
+                        ></hour-and-min-select> -->
+                        <el-time-select
+                            style="width: 100%"
+                            v-model="form.finishDateTime"
+                            start="09:00"
+                            step="00:30"
+                            end="18:00"
+                            placeholder="请选择时间"
+                        ></el-time-select>
                     </el-col>
                 </el-form-item>
 
@@ -602,6 +629,7 @@ async function deleteTaskFun() {
 
 <style scoped lang="scss">
 @import '../../assets/css/variables.scss';
+
 .el-dialog--center .el-dialog__footer {
     text-align: right !important;
 }

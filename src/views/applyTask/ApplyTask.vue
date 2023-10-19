@@ -57,6 +57,7 @@ import { validateHoursInput } from '@/utils/validate/validateHoursInput';
 import {
     getFormattedDate,
     getFormattedDateTwo,
+    getFormattedDateThree,
 } from '@/utils/format/formatDate';
 import { disabledPreviousDates } from '@/utils/limit/limitDateSelect';
 // 任务描述验证
@@ -66,7 +67,7 @@ import CreateTask from '@/components/create-task/CreateTask.vue';
 // 获取store中的userid
 import { useUserIdStore } from '@/store/public';
 // 导入时间&分钟选择
-import HourAndMinSelect from '@/components/hour-min-select/HourAndMinSelect.vue';
+// import HourAndMinSelect from '@/components/hour-min-select/HourAndMinSelect.vue';
 
 /********************************\
  * 获取权限处理
@@ -177,6 +178,10 @@ function dialogFormVisibleFun(currentId) {
     );
 
     if (selectedItem) {
+        // 时间显示处理
+        form.planFinishDateTime = getFormattedDateThree(
+            selectedItem.planFinishDate,
+        );
         form.taskDescription = selectedItem.taskDescription;
         form.planFinishHour = selectedItem.planFinishHour;
         form.planFinishDate = selectedItem.planFinishDate;
@@ -720,10 +725,10 @@ const dialogWidth = computed(() => {
 /********************************\
  * 时间传递（自定义事件）
 \********************************/
-const handleTimeUpdate = (time) => {
-    // console.log('Received update-time event with value:', time);
-    form.planFinishDateTime = time;
-};
+// const handleTimeUpdate = (time) => {
+//     // console.log('Received update-time event with value:', time);
+//     form.planFinishDateTime = time;
+// };
 </script>
 
 <template>
@@ -1013,10 +1018,18 @@ const handleTimeUpdate = (time) => {
                     </el-col>
                     <el-col :span="2" style="text-align: center">-</el-col>
                     <el-col :span="11">
-                        <hour-and-min-select
+                        <!-- <hour-and-min-select
                             :selected-time="form.planFinishDate"
                             @update-time="handleTimeUpdate"
-                        ></hour-and-min-select>
+                        ></hour-and-min-select> -->
+                        <el-time-select
+                            style="width: 100%"
+                            v-model="form.planFinishDateTime"
+                            start="09:00"
+                            step="00:30"
+                            end="18:00"
+                            placeholder="请选择时间"
+                        ></el-time-select>
                     </el-col>
                 </el-form-item>
                 <!-- 任务描述 -->

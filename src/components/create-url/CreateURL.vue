@@ -17,6 +17,7 @@ const dialogFormVisible = ref(false);
 function dialogFormVisibleFun() {
     // 打开对话框
     dialogFormVisible.value = true;
+    focusInput();
 }
 /********************************\
  * 创建后同步列表
@@ -71,6 +72,13 @@ async function createURLBtn() {
         });
     }
 }
+/********************************\
+ * 焦点控制
+\********************************/
+const descriptionRef = ref(null);
+const focusInput = () => {
+    descriptionRef.value.focus();
+};
 </script>
 
 <template>
@@ -83,6 +91,7 @@ async function createURLBtn() {
             title="网址新增"
             modal="true"
             class="dialog-content"
+            @opened="focusInput"
         >
             <el-form :model="form">
                 <!-- 描述内容 -->
@@ -94,6 +103,7 @@ async function createURLBtn() {
                     <el-input
                         v-model="form.description"
                         placeholder="请填写网址说明"
+                        ref="descriptionRef"
                     />
                 </el-form-item>
                 <!-- url -->

@@ -31,7 +31,7 @@ import { validateDescriptionInput } from '@/utils/validate/validateDescript';
 import { useUserIdStore } from '@/store/public';
 const userIdStore = useUserIdStore();
 // 导入时间&分钟选择
-import HourAndMinSelect from '@/components/hour-min-select/HourAndMinSelect.vue';
+// import HourAndMinSelect from '@/components/hour-min-select/HourAndMinSelect.vue';
 import router from '@/router';
 
 /********************************\
@@ -63,98 +63,58 @@ function resetForm() {
 \********************************/
 const dialogFormVisible = ref(false);
 const formLabelWidth = '120px';
-const isTokenExpires = ref(false);
-// 点击创建按钮发送请求，获取权限接口数据
+const projectList = ref([]);
+const taskTypeList = ref([]);
+const auditUserList = ref([]);
+
 async function dialogFormVisibleFun() {
     // 打开对话框
     dialogFormVisible.value = true;
+
     // 调用用户权限项目接口
-    await getUserProjectList();
+    let response = await getUserProjectList();
+    if (!handleResponse(response)) return;
+    projectList.value = response.result;
+
     // 调用获取权限任务类型接口
-    await getTaskTypeList();
+    response = await getTaskTypeList();
+    if (!handleResponse(response)) return;
+    taskTypeList.value = response.result;
+
     // 调用权限审批人接口
-    await getAuditUserList();
+    response = await getAuditUserList();
+    if (!handleResponse(response)) return;
+    auditUserList.value = response.result;
 }
-/********************************\
- * 获取用户有权限的项目ID
-\********************************/
-const projectList = ref([]);
+
 async function getUserProjectList() {
-    if (isTokenExpires.value) return;
-    const response = await userProjectList.fetchUserProjectListAction(
-        userIdStore.userId,
-    );
-
-    if (response && response.code === 401) {
-        isTokenExpires.value = true;
-        ElMessage({
-            message: response.message,
-            type: 'error',
-        });
-        router.replace({ path: '/login' });
-    } else if (response && response.code === 200) {
-        projectList.value = response.result;
-    } else {
-        ElMessage({
-            message: '获取项目失败',
-            type: 'error',
-        });
-    }
+    return await userProjectList.fetchUserProjectListAction(userIdStore.userId);
 }
 
-/********************************\
- * 获取任务类别ID
-\********************************/
-const taskTypeList = ref([]);
 async function getTaskTypeList() {
-    if (isTokenExpires.value) return;
-    const response = await useTaskTypeList.fetchTaskTypeListAction();
-    if (response && response.code === 401) {
-        isTokenExpires.value = true;
-        ElMessage({
-            message: response.message,
-            type: 'error',
-        });
-        router.replace({ path: '/login' });
-        return;
-    } else if (response && response.code === 200) {
-        taskTypeList.value = response.result;
-    } else {
-        ElMessage({
-            message: '获取任务类型失败',
-            type: 'error',
-        });
-    }
+    return await useTaskTypeList.fetchTaskTypeListAction();
 }
 
-/********************************\
- * 获取审批人ID
-\********************************/
-const auditUserList = ref([]);
 async function getAuditUserList() {
-    if (isTokenExpires.value) return;
-    const response = await useAuditTypeList.fetchAuditUserListAction();
-    if (response && response.code === 401) {
-        isTokenExpires.value = true;
-        ElMessage({
-            message: response.message,
-            type: 'error',
-        });
-        router.replace({ path: '/login' });
-        return;
-    } else if (response && response.code === 200) {
-        auditUserList.value = response.result;
-    } else {
-        console.log('response ===', response);
-        ElMessage({
-            message: '获取审批人失败',
-            type: 'error',
-        });
-    }
+    return await useAuditTypeList.fetchAuditUserListAction();
 }
 
+function handleResponse(response) {
+    if (response && response.code === 200) {
+        return true;
+    } else {
+        ElMessage({
+            message: response.message || '请求失败',
+            type: 'error',
+        });
+        if (response && response.code === 401) {
+            router.replace({ path: '/login' });
+        }
+        return false;
+    }
+}
 /********************************\
- * 对话框确认操作
+ * 创建提交
 \********************************/
 async function createTaskBtn() {
     // 项目id
@@ -269,10 +229,10 @@ const dialogWidth = computed(() => {
 /********************************\
  * 时间传递（自定义事件）
 \********************************/
-const handleTimeUpdate = (time) => {
-    // console.log('Received update-time event with value:', time);
-    form.planFinishDateTime = time;
-};
+// const handleTimeUpdate = (time) => {
+//     // console.log('Received update-time event with value:', time);
+//     form.planFinishDateTime = time;
+// };
 </script>
 
 <template>
@@ -286,6 +246,7 @@ const handleTimeUpdate = (time) => {
             modal="true"
             :width="dialogWidth"
             class="dialog-content"
+            @close="resetForm"
         >
             <el-form :model="form">
                 <!-- 项目ID-选择框 -->
@@ -384,9 +345,17 @@ const handleTimeUpdate = (time) => {
                                 :value="n - 1"
                             ></el-option>
                         </el-select> -->
-                        <hour-and-min-select
+                        <!-- <hour-and-min-select
                             @update-time="handleTimeUpdate"
-                        ></hour-and-min-select>
+                        ></hour-and-min-select> -->
+                        <el-time-select
+                            style="width: 100%"
+                            v-model="form.planFinishDateTime"
+                            start="09:00"
+                            step="00:30"
+                            end="18:00"
+                            placeholder="请选择时间"
+                        ></el-time-select>
                     </el-col>
                 </el-form-item>
 
@@ -488,8 +457,19 @@ const handleTimeUpdate = (time) => {
 
 <style scoped lang="scss">
 @import '../../assets/css/variables.scss';
+
+.el-overlay-dialog {
+    width: 100vw;
+    height: 100vh;
+}
+
 .create_container {
+    width: 100%;
+    height: 100%;
+
     .dialog-content {
+        width: 100%;
+        height: 100%;
         max-height: 400px; /* 你可以根据需要调整这个值 */
         overflow-y: auto;
     }

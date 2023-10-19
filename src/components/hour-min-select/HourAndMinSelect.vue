@@ -44,14 +44,15 @@ watch(combinedTime, updateTime);
 /********************************\
  * 选择时间处理
 \********************************/
-function selectedMinuteFun(min) {
-    selectedMinute.value = min;
-    selectedValue.value = `${selectedHour.value}:${min}`;
-}
 
 function selectedHourFun(hour) {
     selectedHour.value = hour;
     selectedValue.value = `${hour}:${selectedMinute.value}`;
+}
+
+function selectedMinuteFun(min) {
+    selectedMinute.value = min;
+    selectedValue.value = `${selectedHour.value}:${min}`;
 }
 
 /********************************\
@@ -73,15 +74,15 @@ watchEffect(() => {
 
 <template>
     <div class="hourmin_container">
-        <el-select
-            v-model="selectedValue"
-            class="custom-time-select"
-            placeholder="请选择时间"
-        >
-            <div class="content">
+        <el-col :span="12">
+            <el-select
+                v-model="selectedValue"
+                class="custom-time-select"
+                placeholder="请选择时间"
+                @focus="handleFocus"
+            >
                 <!-- 显示小时 -->
                 <div class="hour-section">
-                    <div>小时</div>
                     <el-option
                         v-for="hour in Array.from(
                             { length: 11 },
@@ -95,10 +96,12 @@ watchEffect(() => {
                         "
                     ></el-option>
                 </div>
-
+            </el-select>
+        </el-col>
+        <el-col :span="12">
+            <el-select>
                 <!-- 显示分钟 -->
                 <div class="minute-section">
-                    <div>分钟</div>
                     <el-option
                         label="00"
                         value="00"
@@ -110,8 +113,8 @@ watchEffect(() => {
                         @click="selectedMinuteFun('30')"
                     ></el-option>
                 </div>
-            </div>
-        </el-select>
+            </el-select>
+        </el-col>
     </div>
 </template>
 
@@ -119,28 +122,49 @@ watchEffect(() => {
 .hourmin_container {
     margin: 0;
     padding: 0;
+    display: flex;
+}
+
+.show {
+    display: flex;
+    padding: 3px 5px;
+}
+.hour,
+.min {
+    flex: 1;
+    text-align: center;
 }
 
 .content {
     display: flex;
-    flex-wrap: nowrap;
-    justify-content: space-around;
 }
 
 .hour-section,
 .minute-section {
-    width: 90px;
+    flex: 1;
+    display: block;
     text-align: center;
 }
 .hour-section {
-    text-align: center;
     height: 200px; /* 设置一个固定高度 */
     overflow-y: auto; /* 允许垂直滚动 */
 }
 
-.hour-section > div:first-child,
-.minute-section > div:first-child {
-    line-height: 2; /* 调整行高以与选项对齐 */
-    margin-bottom: 5px; /* 根据需要微调间距 */
+.footer {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    padding-right: 10px;
+    margin-top: 3px;
+
+    .btn {
+        padding: 3px 8px;
+        cursor: pointer;
+        /* border: 1px solid black; */
+    }
+
+    .sure {
+        margin-left: 6px;
+    }
 }
 </style>

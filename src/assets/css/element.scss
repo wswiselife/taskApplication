@@ -5,3 +5,8 @@
 .el-textarea__inner::placeholder {
     font-size: 12px !important;
 }
+
+.el-overlay-dialog {
+    width: 100vw !important;
+    height: 100vh !important;
+}

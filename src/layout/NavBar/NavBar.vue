@@ -100,7 +100,7 @@ const firstLetter = computed(() => {
         <div class="navbar_left">
             <!-- logo -->
             <div class="logo">
-                <img src="/logo.png" alt="logo" />
+                <img src="../../../public/logo.png" alt="logo" />
             </div>
             <!-- 创建按钮 -->
             <!-- <create></create> -->
@@ -126,6 +126,8 @@ const firstLetter = computed(() => {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    box-shadow: 0px 10px 17px #000;
+    z-index: 999;
 
     .navbar_left {
         display: flex;
@@ -146,7 +148,6 @@ const firstLetter = computed(() => {
         flex-direction: center;
         align-items: center;
         height: 100%;
-        gap: 26px;
         margin-right: 49px;
     }
 
@@ -180,6 +181,7 @@ const firstLetter = computed(() => {
         color: #fff;
         border-radius: 50%;
         background-color: #1768e4;
+        margin-left: 26px;
     }
 }
 </style>

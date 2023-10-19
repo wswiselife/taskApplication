@@ -54,6 +54,7 @@ const vue = require('@vitejs/plugin-vue');
 const babel = require('vite-babel-plugin').default;
 const eslintPlugin = require('vite-plugin-eslint').default;
 const path = require('path');
+const postcssPresetEnv = require('postcss-preset-env');
 
 module.exports = defineConfig({
     base: './',
@@ -74,6 +75,9 @@ module.exports = defineConfig({
             scss: {
                 additionalData: '@import "~@/assets/css/variables.scss";',
             },
+        },
+        postcss: {
+            plugins: [postcssPresetEnv()],
         },
     },
     build: {

@@ -146,7 +146,7 @@ function showPwd() {
                         <template #prefix>
                             <span class="svg_container">
                                 <!-- <svg-icon icon-class="user" /> -->
-                                <img src="/user.png" alt="" />
+                                <img src="../../../public/user.png" alt="" />
                             </span>
                         </template>
                     </el-input>
@@ -162,15 +162,24 @@ function showPwd() {
                         <template #prefix>
                             <span class="svg_container">
                                 <!-- <svg-icon icon-class="user" /> -->
-                                <img src="/password.png" alt="" />
+                                <img
+                                    src="../../../public/password.png"
+                                    alt=""
+                                />
                             </span>
                         </template>
                         <!-- 右侧眼睛 -->
                         <template #suffix>
                             <span class="show_pwd" @click="showPwd">
                                 <!-- <img src="../../assets/icon/eye.svg" alt="" /> -->
-                                <img v-if="isPwdShown" src="/eye-hide.png" />
-                                <img v-else src="/eye-open.png" />
+                                <img
+                                    v-if="isPwdShown"
+                                    src="../../../public/eye-hide.png"
+                                />
+                                <img
+                                    v-else
+                                    src="../../../public/eye-open.png"
+                                />
                             </span>
                         </template>
                     </el-input>
@@ -233,7 +242,7 @@ function showPwd() {
     width: 100%;
     // background-color: $color-four;
     // overflow: hidden;
-    background-image: url('/login-bgimg.png');
+    background-image: url('../../../public/login-bgimg.png');
     background-size: 100% 100%;
     display: flex;
     justify-content: center;

@@ -34,7 +34,7 @@ const validatePoint = (PointInput) => {
     if (inputStr.split('.').length - 1 > 1) {
         return {
             isValid: false,
-            message: '输入不能包含多于一个的小数点',
+            message: '点数输入不能包含多于一个的小数点',
         };
     }
 
@@ -59,7 +59,7 @@ const validatePoint = (PointInput) => {
     if (!/^(0(\.\d)?|[1-9]\d*(\.\d)?)$/.test(inputStr)) {
         return {
             isValid: false,
-            message: '请输入有效的数字格式',
+            message: '请输入有效的点数格式',
         };
     }
 

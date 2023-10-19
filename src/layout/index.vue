@@ -57,8 +57,8 @@ import sidebar from './sideBar/SideBar.vue';
         width: 100%;
         height: 70px;
         background: #ffffff;
-        box-shadow: 0px 10px 17px 0px #000;
-        z-index: 15;
+        box-shadow: 0px 10px 17px #000;
+        z-index: 999;
         // border-bottom: 1px solid black;
     }
 

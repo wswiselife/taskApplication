@@ -54,6 +54,10 @@ request.interceptors.response.use(
         // console.log('response.data ===', response.data);
         if (response.status === 200) {
             return response.data;
+        } else if (response.status === 401) {
+            // 重新登录逻辑
+            localStorage.removeItem('token'); // 清除 token
+            router.push({ path: '/login' }); // 重定向到登录页面
         } else {
             return Promise.reject(new Error('Error: ' + response.status));
         }
