@@ -215,38 +215,28 @@ async function agreeFun() {
         return;
     }
 
-    try {
-        // 获取审批接口
-        const response = await useAgreeTask.fetchAgreeTaskAction(form);
-        // console.log('审批成功后的 response ===', response);
-        if (response && response.code === 200) {
-            // 清除弹出框
-            showAgreeDialog.value = false;
-            // 提示成功
-            ElMessage({
-                message: `任务审批成功，任务编号为${response.result.code}。`,
-                type: 'success',
-            });
-            // 清空输入的点数
-            resetForm();
-            // 重新发送请求
-            useAuditTaskList.fetchAuditTaskAction();
-        } else {
-            showAgreeDialog.value = false;
-            ElMessage({
-                message: response.message,
-                type: 'error',
-            });
-            // alert(response.message)
-        }
-    } catch (error) {
-        console.log('error ===', error);
+    // 获取审批接口
+    const response = await useAgreeTask.fetchAgreeTaskAction(form);
+    // console.log('审批成功后的 response ===', response);
+    if (response && response.code === 200) {
+        // 清除弹出框
+        showAgreeDialog.value = false;
+        // 提示成功
+        ElMessage({
+            message: `任务审批成功，任务编号为${response.result.code}。`,
+            type: 'success',
+        });
+        // 清空输入的点数
+        resetForm();
+        // 重新发送请求
+        useAuditTaskList.fetchAuditTaskAction();
+    } else {
         showAgreeDialog.value = false;
         ElMessage({
-            // todo 任务审批请求任务不成功。+error
-            message: `任务审批请求任务不成功。${error}`,
+            message: response.message,
             type: 'error',
         });
+        // alert(response.message)
     }
 }
 
@@ -282,35 +272,27 @@ function showDeleteDialogFun(currentId) {
  * 假删除
 \********************************/
 async function deleteTaskFun() {
-    try {
-        const type = 2;
-        const response = await deleteTask.fetchDeleteTaskAction({
-            currentId: chooseDeleteId.value,
-            // 直接多传递一个type
-            type,
-        });
+    const type = 2;
+    const response = await deleteTask.fetchDeleteTaskAction({
+        currentId: chooseDeleteId.value,
+        // 直接多传递一个type
+        type,
+    });
 
-        // console.log('删除的 response ===', response);
-        if (response && response.code === 200) {
-            // 清除对话框
-            showDeleteDialog.value = false;
-            // 提示新建完成
-            ElMessage({
-                message: '任务删除成功',
-                type: 'success',
-            });
-            // 重新获取数据
-            getAuditUserData();
-        } else {
-            ElMessage({
-                message: response.message,
-                type: 'error',
-            });
-        }
-    } catch (error) {
-        console.log('error ===', error);
+    // console.log('删除的 response ===', response);
+    if (response && response.code === 200) {
+        // 清除对话框
+        showDeleteDialog.value = false;
+        // 提示新建完成
         ElMessage({
-            message: '删除失败',
+            message: '任务删除成功',
+            type: 'success',
+        });
+        // 重新获取数据
+        getAuditUserData();
+    } else {
+        ElMessage({
+            message: response.message,
             type: 'error',
         });
     }

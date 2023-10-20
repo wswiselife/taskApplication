@@ -92,6 +92,7 @@ export const useEmployeeTaskStore = defineStore('employeeTask', {
         async fetchEmployeeTaskAction() {
             const response = await getEmployeeTaskData();
             this.employeeTaskList = response.result;
+            return response;
         },
     },
 });

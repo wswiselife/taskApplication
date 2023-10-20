@@ -32,7 +32,6 @@ import { useUserIdStore } from '@/store/public';
 const userIdStore = useUserIdStore();
 // 导入时间&分钟选择
 // import HourAndMinSelect from '@/components/hour-min-select/HourAndMinSelect.vue';
-import router from '@/router';
 
 /********************************\
  * 表单数据定义
@@ -108,7 +107,11 @@ function handleResponse(response) {
             type: 'error',
         });
         if (response && response.code === 401) {
-            router.replace({ path: '/login' });
+            // router.replace({ path: '/login' });
+            // ElMessage({
+            //     message: response.message || '请求失败',
+            //     type: 'success',
+            // });
         }
         return false;
     }
@@ -176,18 +179,10 @@ async function createTaskBtn() {
         form.planFinishDateTime,
     );
 
-    console.log('form.planFinishDate ===', form.planFinishDate);
+    // console.log('form.planFinishDate ===', form.planFinishDate);
     try {
         const response = await createTask.fetchCreateTaskAction(form);
         // console.log(' Create 页面 response ===', response);
-
-        if (response && response.code === 401) {
-            ElMessage({
-                message: response.message,
-                type: 'success',
-            });
-            router.push({ path: '/login' });
-        }
 
         if (response && response.code === 200) {
             // 关闭对话框

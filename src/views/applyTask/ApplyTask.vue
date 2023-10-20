@@ -110,9 +110,11 @@ const userIdStore = useUserIdStore();
 /********************************\
  * 获取列表数据并渲染
 \********************************/
-function getEmployeeTasList() {
-    employeeTaskStore.fetchEmployeeTaskAction();
-    console.log('申请列表数据 ====', employeeTaskList);
+async function getEmployeeTasList() {
+    // 想拿到状态码，store中要返回promise，这里要使用async/await
+    const response = await employeeTaskStore.fetchEmployeeTaskAction();
+    // console.log('申请列表数据 ====', employeeTaskList);
+    console.log('页面中的response ===', response.code);
 }
 const employeeTaskStore = useEmployeeTaskStore(); // 列表展示数据
 // 这里一定要用storeTorefs,而不是ref // todo
@@ -351,36 +353,28 @@ function showDeleteDialogFun(currentId) {
  * 假删除
 \********************************/
 async function deleteTaskFun() {
-    try {
-        const type = 1;
-        const response = await deleteTask.fetchDeleteTaskAction({
-            currentId: chooseDeleteId.value,
-            // 直接多传递一个type
-            type,
-        });
+    const type = 1;
+    const response = await deleteTask.fetchDeleteTaskAction({
+        currentId: chooseDeleteId.value,
+        // 直接多传递一个type
+        type,
+    });
 
-        // console.log('删除的 response ===', response);
-        if (response && response.code === 200) {
-            // 清除对话框
-            showDeleteDialog.value = false;
-            // 提示新建完成
-            ElMessage({
-                message: '任务删除成功',
-                type: 'success',
-            });
-            getEmployeeTasList(); // 重新获取数据
-        } else {
-            // 可以添加其他的错误处理逻辑
-            // console.log('出错了');
-            ElMessage({
-                message: response.message,
-                type: 'error',
-            });
-        }
-    } catch (error) {
-        console.log('error ===', error);
+    // console.log('删除的 response ===', response);
+    if (response && response.code === 200) {
+        // 清除对话框
+        showDeleteDialog.value = false;
+        // 提示新建完成
         ElMessage({
-            message: '删除失败',
+            message: '任务删除成功',
+            type: 'success',
+        });
+        getEmployeeTasList(); // 重新获取数据
+    } else {
+        // 可以添加其他的错误处理逻辑
+        // console.log('出错了');
+        ElMessage({
+            message: response.message,
             type: 'error',
         });
     }
