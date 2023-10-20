@@ -67,27 +67,39 @@ const handle401Error = () => {
     }
 };
 
-// 响应拦截器
 request.interceptors.response.use(
     (response) => {
         // 关闭进度条
         NProgress.done();
-        if (response.data.code === 200) {
-            return response.data;
-        }
-        if (response.data.code === 401) {
-            handle401Error();
-            return;
+        console.log('response.data:', response);
+        if (response.status == 200) {
+            if (response.data.code == 200) {
+                return response.data;
+            } else if (response.data.code === 401) {
+                handle401Error();
+                return;
+            } else if (response.data.code >= 400 && response.data.code < 500) {
+                ElMessage({
+                    message: response.data.message || '请求错误',
+                    type: 'error',
+                });
+                return Promise.reject(response.data.message);
+            } else {
+                // 其他未知错误
+                ElMessage({
+                    message: response.data.message,
+                    type: 'error',
+                });
+                return Promise.reject(response.data.message);
+            }
         } else {
-            return Promise.reject(new Error('Error: ' + response.status));
+            // console.log('请求发送错误');
+            return Promise.reject(response.data.message);
         }
     },
     (error) => {
         // 关闭进度条
         NProgress.done();
-        if (error.response && error.response.status === 401) {
-            handle401Error();
-        }
         return Promise.reject(error);
     },
 );

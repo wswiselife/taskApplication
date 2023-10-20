@@ -20,6 +20,7 @@ import { useRouter } from 'vue-router';
 import { useUserLoginStore } from '../../store/modules/user';
 import { ElMessage } from 'element-plus';
 import { useUserIdStore } from '@/store/public';
+import debounce from 'lodash/debounce';
 
 /********************************\
  * 公共引入处理
@@ -31,7 +32,6 @@ const userIdStore = useUserIdStore();
 /********************************\
  * 登录部分
 \********************************/
-
 const form = reactive({
     account: '',
     password: '',
@@ -61,44 +61,35 @@ async function loginbtn() {
         return;
     }
 
-    try {
-        // 发送登录请求
-        const response = await userLoginStore.fetchUserLoginAction(form);
-        console.log('登录 response ===', response);
-        if (response.code === 200) {
-            // 存储 token 和 authorityList 到 localStorage
-            localStorage.setItem('token', response.result.token);
-            localStorage.setItem('username', form.account); // 存储用户名到本地
-            localStorage.setItem(
-                'authorityList',
-                JSON.stringify(response.result.authorityList),
-            );
+    // 发送登录请求
+    const response = await userLoginStore.fetchUserLoginAction(form);
+    console.log('登录 response ===', response);
+    if (response.code === 200) {
+        // 存储 token 和 authorityList 到 localStorage
+        localStorage.setItem('token', response.result.token);
+        localStorage.setItem('username', form.account); // 存储用户名到本地
+        localStorage.setItem(
+            'authorityList',
+            JSON.stringify(response.result.authorityList),
+        );
 
-            // 存储用户的id到store中
-            userIdStore.saveUserId(response.result.userId);
+        // 存储用户的id到store中
+        userIdStore.saveUserId(response.result.userId);
 
-            // 检查是否具有管理员权限
-            const hasAdminAuthority =
-                response.result.authorityList.includes('WEB_TaskApplyAudit');
+        // 检查是否具有管理员权限
+        const hasAdminAuthority =
+            response.result.authorityList.includes('WEB_TaskApplyAudit');
 
-            // 根据权限跳转到相应的页面
-            if (hasAdminAuthority) {
-                router.push({ path: '/dashboard/approval' }); // 第一个页面
-            } else {
-                router.push({ path: '/dashboard/apply' }); // 第二个页面
-            }
+        // 根据权限跳转到相应的页面
+        if (hasAdminAuthority) {
+            router.push({ path: '/dashboard/approval' }); // 第一个页面
         } else {
-            console.log('response.message ===', response.message);
-            ElMessage({
-                message: response.message,
-                type: 'error',
-            });
+            router.push({ path: '/dashboard/apply' }); // 第二个页面
         }
-    } catch (error) {
-        //句号，回车，error todo
-        console.log('error ===', error);
+    } else {
+        console.log('response.message ===', response.message);
         ElMessage({
-            message: `登录失败。${error}`,
+            message: response.message,
             type: 'error',
         });
     }
@@ -118,8 +109,10 @@ function showPwd() {
 }
 
 /********************************\
- * 校验处理
+ * 防抖处理
 \********************************/
+//debounce中的第一个参数，传递的是他的引用，而不是返回值，所以不带括号
+const debouncedLoginBtn = debounce(loginbtn, 600);
 </script>
 
 <template>
@@ -133,7 +126,7 @@ function showPwd() {
                 :model="form"
                 class="login_form"
                 ref="loginFormRef"
-                @keyup.enter="loginbtn"
+                @keyup.enter="debouncedLoginBtn"
             >
                 <el-form-item class="account" prop="account">
                     <el-input
@@ -187,7 +180,7 @@ function showPwd() {
             </el-form>
 
             <div class="btn-container">
-                <el-button @click="loginbtn" class="login_btn">
+                <el-button @click="debouncedLoginBtn" class="login_btn">
                     <!-- <span class="letter">登</span>
                     <span class="letter">录</span> -->
                     登录

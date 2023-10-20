@@ -32,7 +32,8 @@ import { useUserIdStore } from '@/store/public';
 const userIdStore = useUserIdStore();
 // 导入时间&分钟选择
 // import HourAndMinSelect from '@/components/hour-min-select/HourAndMinSelect.vue';
-
+// 防抖
+import debounce from 'lodash/debounce';
 /********************************\
  * 表单数据定义
 \********************************/
@@ -180,40 +181,35 @@ async function createTaskBtn() {
     );
 
     // console.log('form.planFinishDate ===', form.planFinishDate);
-    try {
-        const response = await createTask.fetchCreateTaskAction(form);
-        // console.log(' Create 页面 response ===', response);
 
-        if (response && response.code === 200) {
-            // 关闭对话框
-            dialogFormVisible.value = false;
-            // 数据共享
-            isCreateStore.setIsCreated(true);
-            // 提示新建完成
-            ElMessage({
-                message: '任务新增成功',
-                type: 'success',
-            });
-            // 清除所有数据
-            resetForm();
-        } else {
-            // 可以添加其他的错误处理逻辑
-            ElMessage({
-                message: response.message,
-                type: 'error',
-            });
-        }
-    } catch (error) {
-        console.error('创建任务错误：', error);
-        // 取消弹出框
+    const response = await createTask.fetchCreateTaskAction(form);
+    // console.log(' Create 页面 response ===', response);
+
+    if (response && response.code === 200) {
+        // 关闭对话框
         dialogFormVisible.value = false;
+        // 数据共享
+        isCreateStore.setIsCreated(true);
+        // 提示新建完成
         ElMessage({
-            message: `任务新增失败，${error}`,
+            message: '任务新增成功',
+            type: 'success',
+        });
+        // 清除所有数据
+        resetForm();
+    } else {
+        // 可以添加其他的错误处理逻辑
+        ElMessage({
+            message: response.message,
             type: 'error',
         });
     }
 }
 
+/********************************\
+ * 防抖处理
+\********************************/
+const debounceCreateTaskBtn = debounce(createTaskBtn, 600);
 /********************************\
  * 完整显示1000字符
 \********************************/
@@ -379,7 +375,7 @@ const dialogWidth = computed(() => {
                     </el-button>
                     <el-button
                         type="primary"
-                        @click="createTaskBtn"
+                        @click="debounceCreateTaskBtn"
                         class="btn-sure"
                     >
                         确认

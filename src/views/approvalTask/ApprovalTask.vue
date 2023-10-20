@@ -33,7 +33,8 @@ import { validatePoint } from '@/utils/validate/validatePoint';
 import { useUserIdStore } from '@/store/public';
 // 导入时间&分钟选择
 // import HourAndMinSelect from '@/components/hour-min-select/HourAndMinSelect.vue';
-
+// 防抖处理
+import debounce from 'lodash/debounce';
 /********************************\
  * 获取权限处理
 \********************************/
@@ -239,7 +240,10 @@ async function agreeFun() {
         // alert(response.message)
     }
 }
-
+/********************************\
+ * 防抖处理
+\********************************/
+const debounceAgreeFun = debounce(agreeFun, 600);
 /********************************\
  * 日期选择限制//todo
 \********************************/
@@ -297,6 +301,10 @@ async function deleteTaskFun() {
         });
     }
 }
+/********************************\
+ * 删除防抖处理
+\********************************/
+const debounceDeleteTaskFun = debounce(deleteTaskFun, 600);
 /********************************\
  * 焦点控制
 \********************************/
@@ -576,7 +584,7 @@ const focusInput = () => {
                     </el-button>
                     <el-button
                         type="primary"
-                        @click="agreeFun"
+                        @click="debounceAgreeFun"
                         class="btn-sure"
                     >
                         同意
@@ -598,7 +606,7 @@ const focusInput = () => {
                     </el-button>
                     <el-button
                         type="primary"
-                        @click="deleteTaskFun"
+                        @click="debounceDeleteTaskFun"
                         class="btn-sure"
                     >
                         确认

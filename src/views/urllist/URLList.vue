@@ -10,7 +10,7 @@ import CreateURL from '@/components/create-url/CreateURL.vue';
 import { useIsCreatedURLStore } from '@/store/public';
 import { ElMessage } from 'element-plus';
 import { useRouter } from 'vue-router';
-
+import debounce from 'lodash/debounce';
 /********************************\
  * 公共引入处理
 \********************************/
@@ -162,6 +162,14 @@ const deleteURLFun = async () => {
         console.log('error ===', error);
     }
 };
+/********************************\
+ * 防抖处理
+\********************************/
+const debounceUpdateURLFun = debounce(updateURLFun, 600);
+/********************************\
+ * 防抖处理
+\********************************/
+const debounceDeleteURLFun = debounce(deleteURLFun, 600);
 </script>
 
 <template>
@@ -263,7 +271,7 @@ const deleteURLFun = async () => {
                     </el-button>
                     <el-button
                         type="primary"
-                        @click="updateURLFun"
+                        @click="debounceUpdateURLFun"
                         class="btn-sure"
                     >
                         确认
@@ -285,7 +293,7 @@ const deleteURLFun = async () => {
                     </el-button>
                     <el-button
                         type="primary"
-                        @click="deleteURLFun"
+                        @click="debounceDeleteURLFun"
                         class="btn-sure"
                     >
                         确认

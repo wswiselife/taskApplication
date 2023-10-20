@@ -4,6 +4,7 @@ import { useAddURLListStore } from '@/store/modules/urllist.js';
 import { ElMessage } from 'element-plus';
 import { useIsCreatedURLStore } from '@/store/public';
 import { useRouter } from 'vue-router';
+import debounce from 'lodash/debounce';
 /********************************\
  * 公共引入处理
 \********************************/
@@ -79,6 +80,10 @@ const descriptionRef = ref(null);
 const focusInput = () => {
     descriptionRef.value.focus();
 };
+/********************************\
+ * 防抖处理
+\********************************/
+const debounceCreateURLBtn = debounce(createURLBtn, 1000);
 </script>
 
 <template>
@@ -125,7 +130,7 @@ const focusInput = () => {
                     </el-button>
                     <el-button
                         type="primary"
-                        @click="createURLBtn"
+                        @click="debounceCreateURLBtn"
                         class="btn-sure"
                     >
                         确认

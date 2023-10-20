@@ -68,7 +68,8 @@ import CreateTask from '@/components/create-task/CreateTask.vue';
 import { useUserIdStore } from '@/store/public';
 // 导入时间&分钟选择
 // import HourAndMinSelect from '@/components/hour-min-select/HourAndMinSelect.vue';
-
+// 防抖处理
+import debounce from 'lodash/debounce';
 /********************************\
  * 获取权限处理
 \********************************/
@@ -338,7 +339,14 @@ async function modify() {
         });
     }
 }
-
+/********************************\
+ * 修改防抖处理
+\********************************/
+const debounceModify = debounce(modify, 600);
+/********************************\
+ * 删除防抖处理
+\********************************/
+const debounceDeleteTaskFun = debounce(deleteTaskFun, 600);
 /********************************\
  * 弹出删除提示框
 \********************************/
@@ -1048,7 +1056,11 @@ const dialogWidth = computed(() => {
                     >
                         取消
                     </el-button>
-                    <el-button type="primary" @click="modify" class="btn-sure">
+                    <el-button
+                        type="primary"
+                        @click="debounceModify"
+                        class="btn-sure"
+                    >
                         确认
                     </el-button>
                 </span>
@@ -1068,7 +1080,7 @@ const dialogWidth = computed(() => {
                     </el-button>
                     <el-button
                         type="primary"
-                        @click="deleteTaskFun"
+                        @click="debounceDeleteTaskFun"
                         class="btn-sure"
                     >
                         确认

@@ -21,7 +21,7 @@ import { userLogout } from '@/api/modules/user';
 // import Create from './create/Create.vue';
 import { ElMessage } from 'element-plus';
 import { ref, computed } from 'vue';
-
+import debounce from 'lodash/debounce';
 /********************************\
  * 公共引入处理
 \********************************/
@@ -31,49 +31,32 @@ const router = useRouter();
  * 退出登录
 \********************************/
 async function logoutbtn() {
-    try {
-        const response = await userLogout();
-        // console.log('退出登录 response ===', response);
-        if (response.code === 200) {
-            // 清除本地缓存
-            localStorage.removeItem('token');
-            localStorage.removeItem('authorityList');
+    const response = await userLogout();
+    // console.log('退出登录 response ===', response);
+    if (response.code === 200) {
+        // 清除本地缓存
+        localStorage.removeItem('token');
+        localStorage.removeItem('authorityList');
 
-            ElMessage({
-                message: '已正常退出',
-                type: 'success',
-            });
+        ElMessage({
+            message: '已正常退出',
+            type: 'success',
+        });
 
-            router.push({ path: '/login' });
+        router.push({ path: '/login' });
 
-            // 禁止浏览器的后退功能
-            window.addEventListener('popstate', function () {
-                history.go(1);
-            });
-        } else {
-            router.push({ path: '/login' });
-            ElMessage({
-                message: response.message,
-                type: 'error',
-            });
-            // 注销失败，打印错误信息
-            // console.error('注销失败:', response.message);
-            localStorage.removeItem('token');
-            localStorage.removeItem('authorityList');
-
-            // 禁止浏览器的后退功能
-            window.addEventListener('popstate', function () {
-                history.go(1);
-            });
-        }
-    } catch (error) {
-        // 捕获任何错误并打印
-        console.error('发生错误:', error);
+        // 禁止浏览器的后退功能
+        window.addEventListener('popstate', function () {
+            history.go(1);
+        });
+    } else {
         router.push({ path: '/login' });
         ElMessage({
-            message: '退出登录失败',
+            message: response.message,
             type: 'error',
         });
+        // 注销失败，打印错误信息
+        // console.error('注销失败:', response.message);
         localStorage.removeItem('token');
         localStorage.removeItem('authorityList');
 
@@ -92,6 +75,11 @@ const username = ref(localStorage.getItem('username') || '?');
 const firstLetter = computed(() => {
     return username.value && username.value.length > 0 ? username.value[0] : '';
 });
+
+/********************************\
+ * 防抖
+\********************************/
+const debounceLogoutBtn = debounce(logoutbtn, 600);
 </script>
 
 <template>
@@ -108,7 +96,9 @@ const firstLetter = computed(() => {
 
         <div class="navbar_right">
             <!-- 退出登录 -->
-            <el-button class="logout" @click="logoutbtn">退出登录</el-button>
+            <el-button class="logout" @click="debounceLogoutBtn">
+                退出登录
+            </el-button>
 
             <!-- 头像 -->
             <!-- <span class="username">{{ username }}</span> -->
