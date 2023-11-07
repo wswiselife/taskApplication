@@ -14,6 +14,8 @@
  * @FilePath: \taskApplication\src\utils\validate\validateHoursInput.js
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
+
+// 20231030（改为选择框，弃用）
 const validateHoursInput = (hoursInput) => {
     // console.log('validateHoursInput函数被调用了');
 
@@ -33,7 +35,7 @@ const validateHoursInput = (hoursInput) => {
     if (inputStr.split('.').length - 1 > 1) {
         return {
             isValid: false,
-            message: '输入不能包含多于一个的小数点',
+            message: '计划完成小时数输入不能包含多于一个的小数点',
         };
     }
 
@@ -42,7 +44,7 @@ const validateHoursInput = (hoursInput) => {
     if (decimalPart && decimalPart.length > 1) {
         return {
             isValid: false,
-            message: '小数点后最多只能有一位数字',
+            message: '计划完成小时数的小数点后最多只能有一位数字',
         };
     }
 
@@ -50,7 +52,7 @@ const validateHoursInput = (hoursInput) => {
     if (/\s/.test(inputStr)) {
         return {
             isValid: false,
-            message: '输入不能包含空格',
+            message: '计划完成小时数的输入不能包含空格',
         };
     }
 
@@ -58,7 +60,7 @@ const validateHoursInput = (hoursInput) => {
     if (!/^(0(\.\d)?|[1-9]\d*(\.\d)?)$/.test(inputStr)) {
         return {
             isValid: false,
-            message: '请输入有效的数字格式',
+            message: '计划完成小时数格式错误,请输入有效的数字格式',
         };
     }
 
@@ -72,7 +74,7 @@ const validateHoursInput = (hoursInput) => {
     } else {
         return {
             isValid: false,
-            message: '输入的小时数超出范围（0-100）',
+            message: '输入的计划完成小时数超出范围（0-100）',
         };
     }
 };

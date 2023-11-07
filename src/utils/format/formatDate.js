@@ -30,10 +30,18 @@ export const getFormattedDate = (date, dateTime) => {
 
 // 用户格式化显示内容
 export const getFormattedDateTwo = (date) => {
-    return moment(date).format('YYYY-MM-DD');
+    if (!date) {
+        return '';
+    } else {
+        return moment(date).format('YYYY-MM-DD');
+    }
 };
 
 // 格式化显示小时和分钟
 export const getFormattedDateThree = (time) => {
-    return moment(time).format('HH:mm');
+    if (!time) {
+        return '';
+    } else {
+        return moment(time).format('HH:mm');
+    }
 };

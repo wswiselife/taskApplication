@@ -24,6 +24,7 @@ import {
     getUpdateTaskData,
     deleteTaskData,
     agreeTaskData,
+    getPlanFinishHourData,
 } from '@/api/modules/task';
 import { defineStore } from 'pinia';
 
@@ -156,6 +157,15 @@ export const useAgreeTaskStore = defineStore('useAgree', {
         async fetchAgreeTaskAction(data) {
             const response = await agreeTaskData(data);
             return response;
+        },
+    },
+});
+
+export const usePlanFinishHourStore = defineStore('planHour', {
+    actions: {
+        async fetchPlanFinishHourAction() {
+            const result = await getPlanFinishHourData();
+            return result;
         },
     },
 });

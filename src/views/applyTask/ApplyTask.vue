@@ -32,6 +32,7 @@ import {
     useUpdateTaskStore,
     useEmployeeTaskStore,
     useDeleteTaskStore,
+    usePlanFinishHourStore,
 } from '@/store/modules/task.js';
 
 import { ref, reactive, onMounted, watch, computed } from 'vue';
@@ -70,6 +71,20 @@ import { useUserIdStore } from '@/store/public';
 // import HourAndMinSelect from '@/components/hour-min-select/HourAndMinSelect.vue';
 // 防抖处理
 import debounce from 'lodash/debounce';
+// 设备检测
+import { isMobileDevice } from '@/utils/device/isMobile';
+// 路由返回
+import { useRouter } from 'vue-router';
+import { showFailToast } from 'vant';
+// 日期非选
+import { validateDateInput } from '@/utils/validate/validateDate';
+// 复制链接
+import { copyLink } from '@/utils/copy-link/copy-link.js';
+import {
+    showFailMessage,
+    showSuccessMessage,
+} from '@/utils/show-message/showSFmessage';
+
 /********************************\
  * 获取权限处理
 \********************************/
@@ -88,18 +103,24 @@ onMounted(() => {
 onMounted(() => {
     // 进入时获取列表数据
     getEmployeeTasList();
+    // 本来下面四个是不需要的，单独修改可以当获得焦点的时候再请求对应的接口
+    // 但是一开始后端并没有直接给对应的文字信息，一开始给的是这些接口的id,所以为了展示内容，要获取她们
+    // id对应的文字信息，所以进入的时候要多请求四个接口，如果一开始就有文字信息，可以只获取一个
     // 调用用户权限项目接口
     getUserProjectList();
     // 调用获取任务类型接口
     getTaskTypeList();
     // 调用审批人接口
     getAuditUserList();
+    // 计划完成小时数选择修改
+    getPlanFinishList();
 });
 
 // 修改的选项的权限获取
 const userProjectList = useUserProjectListStore();
 const useTaskTypeList = useTaskTypeListStore();
 const useAuditTypeList = useAuditUserListStore();
+const usePlanFinishHourList = usePlanFinishHourStore();
 
 // 更新接口数据
 const useUpdateTask = useUpdateTaskStore();
@@ -107,20 +128,26 @@ const useUpdateTask = useUpdateTaskStore();
 const deleteTask = useDeleteTaskStore();
 // 获取用户id
 const userIdStore = useUserIdStore();
+// 移动端返回
+const router = useRouter();
 
 /********************************\
  * 获取列表数据并渲染
 \********************************/
 async function getEmployeeTasList() {
     // 想拿到状态码，store中要返回promise，这里要使用async/await
-    const response = await employeeTaskStore.fetchEmployeeTaskAction();
+    await employeeTaskStore.fetchEmployeeTaskAction();
     // console.log('申请列表数据 ====', employeeTaskList);
-    console.log('页面中的response ===', response.code);
+    // console.log('页面中的response ===', response.code);
 }
 const employeeTaskStore = useEmployeeTaskStore(); // 列表展示数据
 // 这里一定要用storeTorefs,而不是ref // todo
+// 数据持久化问题
 const { employeeTaskList } = storeToRefs(employeeTaskStore);
 
+// console.log(' employeeTaskList===', employeeTaskList);
+
+// 父子组件通过store进行通信
 // 获取创建成功的数据
 const isCreatedStore = useIsCreatedStore();
 const { isCreated } = storeToRefs(isCreatedStore);
@@ -160,6 +187,11 @@ const form = reactive({
     id: chooseModifyId.value,
 });
 
+const resetFormDate = () => {
+    form.planFinishDate = ''; // 计划完成日期
+    form.planFinishDateTime = ''; // 计划完成日期时间
+};
+
 /********************************\
  * 修改内容,弹出框，内容填充
 \********************************/
@@ -173,18 +205,27 @@ function dialogFormVisibleFun(currentId) {
     getTaskTypeList();
     // 调用审批人接口
     getAuditUserList();
-
+    // 计划完成时间选择
+    getPlanFinishList();
     // 将已有数据填写到表单中
     // todo
     const selectedItem = employeeTaskList.value.find(
         (item) => item.id === chooseModifyId.value,
     );
 
+    // console.log('selsectedItem ===', selectedItem);
+
     if (selectedItem) {
         // 时间显示处理
-        form.planFinishDateTime = getFormattedDateThree(
-            selectedItem.planFinishDate,
-        );
+
+        if (!selectedItem.planFinishDate) {
+            form.planFinishDateTime = '';
+        } else {
+            form.planFinishDateTime = getFormattedDateThree(
+                selectedItem.planFinishDate,
+            );
+        }
+
         form.taskDescription = selectedItem.taskDescription;
         form.planFinishHour = selectedItem.planFinishHour;
         form.planFinishDate = selectedItem.planFinishDate;
@@ -265,44 +306,98 @@ async function getAuditUserList() {
 }
 
 /********************************\
- * 点击表格右侧的修改（确定）按钮
+ * 获取计划完成小时数
 \********************************/
-async function modify() {
+const planFinishHourList = ref([]);
+const planFinishHourListMap = ref({});
+async function getPlanFinishList() {
+    const response = await usePlanFinishHourList.fetchPlanFinishHourAction();
+    // console.log('计划完成小时数response ===', response);
+    if (response && response.code === 200) {
+        planFinishHourList.value = response.result;
+        planFinishHourListMap.value = response.result.reduce(
+            (map, planFinishHour) => {
+                map[planFinishHour.id] = planFinishHour.taskPoints;
+                return map;
+            },
+            {},
+        );
+    } else {
+        // ElMessage({
+        //     message: '获取审批人失败',
+        //     type: 'error',
+        // });
+    }
+}
+
+/********************************\
+ * 任务修改
+\********************************/
+async function updateTaskFun() {
     // 验证小时数
     const validateHoursInputResult = validateHoursInput(form.planFinishHour);
     if (!validateHoursInputResult.isValid) {
-        ElMessage({
-            message: validateHoursInputResult.message,
-            type: 'error',
-        });
+        if (isMobileDevice) {
+            showFailToast(validateHoursInputResult.message);
+        } else {
+            ElMessage({
+                message: validateHoursInputResult.message,
+                type: 'error',
+            });
+        }
+
         return;
     }
-    // 验证输入日期
-    if (!form.planFinishDate) {
-        ElMessage({
-            message: '请选择计划完成日期',
-            type: 'error',
-        });
-        return;
-    }
+
     // 任务描述
     const validateDescriptionInputResult = validateDescriptionInput(
         form.taskDescription,
     );
     if (!validateDescriptionInputResult.isValid) {
-        ElMessage({
-            message: validateDescriptionInputResult.message,
-            type: 'error',
-        });
+        if (isMobileDevice) {
+            showFailToast(validateDescriptionInputResult.message);
+        } else {
+            ElMessage({
+                message: validateDescriptionInputResult.message,
+                type: 'error',
+            });
+        }
+
         return;
     }
-    // 日期格式化
-    form.planFinishDate = getFormattedDate(
+
+    // 日期时间校验
+    const validateDdteInputResult = validateDateInput(
         form.planFinishDate,
         form.planFinishDateTime,
     );
+    if (!validateDdteInputResult.isValid) {
+        if (isMobileDevice) {
+            showFailToast(validateDdteInputResult.message);
+        } else {
+            ElMessage({
+                message: validateDdteInputResult.message,
+                type: 'error',
+            });
+        }
+        return;
+    }
 
+    // 当有选择日期时间的时候
+    if (form.planFinishDate && form.planFinishDateTime) {
+        form.planFinishDate = getFormattedDate(
+            form.planFinishDate,
+            form.planFinishDateTime,
+        );
+    } else {
+        form.planFinishDate = null;
+    }
+
+    // console.log('更新的form ===', form);
     try {
+        // 打开禁止编辑表单
+        isSubmitting.value = true;
+
         const response = await useUpdateTask.fetchUpdateTaskAction({
             taskDescription: form.taskDescription,
             projectId: form.projectId,
@@ -311,38 +406,35 @@ async function modify() {
             planFinishDate: form.planFinishDate,
             applyAuditId: form.applyAuditId,
             // 选择的数据id
-            id: chooseModifyId.value,
+            id: chooseModifyId.value || mobileUpdateCurrentId.value,
         });
 
         if (response && response.code === 200) {
-            dialogFormVisible.value = false;
+            // 移动端弹出框
+
             // 提示新建完成
-            ElMessage({
-                message: '任务修改成功',
-                type: 'success',
-            });
+            showSuccessMessage('任务修改成功');
+
             getEmployeeTasList(); // 重新获取数据
+            dialogFormVisible.value = false;
+            showMobileUpdataDialog.value = false;
+            // 成功后关闭禁止编辑表单
+            isSubmitting.value = false;
         } else {
-            // 可以添加其他的错误处理逻辑
-            ElMessage({
-                message: response.message,
-                type: 'error',
-            });
+            showFailMessage(response.message);
+            isSubmitting.value = false;
         }
     } catch (error) {
         console.log('error ===', error);
         // 取消弹出框
         dialogFormVisible.value = false;
-        ElMessage({
-            message: `任务修改失败。${error}`,
-            type: 'error',
-        });
+        showFailMessage(`任务修改失败。${error}`);
     }
 }
 /********************************\
  * 修改防抖处理
 \********************************/
-const debounceModify = debounce(modify, 600);
+const debounceUpdateTaskFun = debounce(updateTaskFun, 600);
 /********************************\
  * 删除防抖处理
 \********************************/
@@ -373,18 +465,10 @@ async function deleteTaskFun() {
         // 清除对话框
         showDeleteDialog.value = false;
         // 提示新建完成
-        ElMessage({
-            message: '任务删除成功',
-            type: 'success',
-        });
+        showSuccessMessage('任务删除成功');
         getEmployeeTasList(); // 重新获取数据
     } else {
-        // 可以添加其他的错误处理逻辑
-        // console.log('出错了');
-        ElMessage({
-            message: response.message,
-            type: 'error',
-        });
+        showFailMessage(response.message);
     }
 }
 
@@ -403,6 +487,8 @@ function handleCellActivated({ row, column }) {
     getTaskTypeList();
     // 调用审批人接口
     getAuditUserList();
+    // todo(20231101)
+    // 单个修改计划完成时间选择
 
     prevValue.value = row.id;
     console.log('当前行 prevValue.value ===', prevValue.value);
@@ -698,6 +784,21 @@ const dialogWidth = computed(() => {
 });
 
 /********************************\
+ * 同步清空日期和时间
+\********************************/
+const handleDateClose = () => {
+    if (!form.planFinishDate) {
+        form.planFinishDateTime = '';
+    }
+};
+
+const handleDateTimeClose = () => {
+    if (!form.planFinishDateTime) {
+        form.planFinishDate = '';
+    }
+};
+
+/********************************\
  * 触发单元格编辑时,获取对应权限
 \********************************/
 
@@ -708,38 +809,246 @@ const dialogWidth = computed(() => {
 /********************************\
  * 修改方式之二；先单击选中，后回车-修改(//todo)
 \********************************/
-// todo
-// function handleCellClick({ row, column }) {
-//     console.log('Selected cell:', row, column);
-// }
-// onMounted(() => {
-//     if (xTable.value) {
-//         document.addEventListener('keydown', handleKeydown);
-//     }
-// });
-// const xTable = ref(null);
-// function handleKeydown (event) {
-//     if (event.keyCode === 13) {
-//         // 检查是否为回车键
-//        console.log('event.keyCode ===', event.keyCode)
-//     }
-// }
+
 /********************************\
  * 时间传递（自定义事件）
 \********************************/
-// const handleTimeUpdate = (time) => {
-//     // console.log('Received update-time event with value:', time);
-//     form.planFinishDateTime = time;
-// };
+
+/********************************\
+ * 处理提交之后网络延迟可以继续修改表单问题
+\********************************/
+const isSubmitting = ref(false);
+
+const closeUpdateDialog = () => {
+    isSubmitting.value = false;
+    // 取消更新的时候，清空form
+    resetFormDate();
+};
+
+/********************************\
+ *
+ * 移动端移动端移动端移动端
+ *
+\********************************/
+const goBack = () => {
+    router.push({ path: '/mobileexplore' });
+};
+
+/********************************\
+ * 移动端修改补全函数
+\********************************/
+const showMobileUpdataDialog = ref(false);
+const mobileUpdateCurrentId = ref();
+
+const vantForm = reactive({
+    vantApplyAuditName: '',
+    vantProjectName: '',
+    vantTaskTypeName: '',
+    vanPlanHourName: '',
+});
+// 补全数据
+const showMobileUpdataDialogBtn = (currentId) => {
+    showMobileUpdataDialog.value = true;
+    mobileUpdateCurrentId.value = currentId;
+
+    // 调用用户权限项目接口
+    getUserProjectList();
+    // 调用获取任务类型接口
+    getTaskTypeList();
+    // 调用审批人接口
+    getAuditUserList();
+    // 计划完成小时数
+    getPlanFinishList();
+    // 将已有数据填写到表单中
+    // todo
+    const selectedItem = employeeTaskList.value.find(
+        (item) => item.id === mobileUpdateCurrentId.value,
+    );
+
+    if (selectedItem) {
+        // 时间显示处理
+        form.planFinishDateTime = getFormattedDateThree(
+            selectedItem.planFinishDate,
+        );
+        form.taskDescription = selectedItem.taskDescription;
+        form.planFinishHour = selectedItem.planFinishHour;
+        form.planFinishDate = getFormattedDateTwo(selectedItem.planFinishDate);
+        form.projectId = selectedItem.projectId; // 项目ID
+        form.taskTypeId = selectedItem.taskTypeId; // 任务类别ID
+        form.applyAuditId = selectedItem.applyAuditId; // 审批人ID
+
+        // vant 真的麻烦
+        vantForm.vantApplyAuditName = selectedItem.applyAuditName;
+        vantForm.vantProjectName = selectedItem.projectName;
+        vantForm.vantTaskTypeName = selectedItem.taskTypeName;
+        vantForm.vanPlanHourName = selectedItem.planFinishHour;
+    }
+};
+/********************************\
+ * <van-picker>格式化
+\********************************/
+const vantAuditUserList = computed(() => {
+    return auditUserList.value.map((user) => ({
+        text: user.nameEN,
+        value: user.id,
+    }));
+});
+
+const vantProjectList = computed(() => {
+    return projectList.value.map((project) => ({
+        text: project.name,
+        value: project.id,
+    }));
+});
+
+const vantTaskTypeList = computed(() => {
+    return taskTypeList.value.map((taskType) => ({
+        text: taskType.name,
+        value: taskType.id,
+    }));
+});
+
+const vantPlanHourList = computed(() => {
+    return planFinishHourList.value.map((planHour) => ({
+        text: planHour.taskPoints,
+        value: planHour.taskPoints,
+    }));
+});
+
+/********************************\
+ * 获取表单数据
+\********************************/
+const showAuditPicker = ref(false);
+const showProjectPicker = ref(false);
+const showTaskTypePicker = ref(false);
+const showPlanDatePicker = ref(false);
+const showPlanDateTimePicker = ref(false);
+const showPlanHourPicker = ref(false);
+
+// 审批人获取
+const onAuditConfirm = ({ selectedOptions }) => {
+    showAuditPicker.value = false;
+    form.applyAuditId = selectedOptions[0].value;
+    vantForm.vantApplyAuditName = selectedOptions[0].text;
+};
+// 项目名称获取
+const onProjectConfirm = ({ selectedOptions }) => {
+    showProjectPicker.value = false;
+    form.projectId = selectedOptions[0].value;
+    vantForm.vantProjectName = selectedOptions[0].text;
+};
+// 任务类型
+const onTaskTypeConfirm = ({ selectedOptions }) => {
+    showTaskTypePicker.value = false;
+    form.taskTypeId = selectedOptions[0].value;
+    vantForm.vantTaskTypeName = selectedOptions[0].text;
+};
+// 计划完成小时数获取
+const onPlanHourConfirm = ({ selectedOptions }) => {
+    showPlanHourPicker.value = false;
+    form.planFinishHour = selectedOptions[0].value;
+    vantForm.vanPlanHourName = selectedOptions[0].text;
+};
+// 日期选择
+const onPlanDateConfirm = (date) => {
+    showPlanDatePicker.value = false;
+    form.planFinishDate = getFormattedDateTwo(date);
+};
+// 完成日期小时
+const onPlanDateTimeConfirm = (data) => {
+    showPlanDateTimePicker.value = false;
+    console.log('小时value ===', data.selectedValues);
+    const formattedTime = data.selectedValues.join(':');
+
+    form.planFinishDateTime = formattedTime;
+};
+// 小时选择
+const filter = (type, options) => {
+    if (type === 'hour') {
+        return options.filter(
+            (option) => Number(option.value) >= 9 && Number(option.value) <= 18,
+        );
+    }
+    if (type === 'minute') {
+        options = options.filter((option) => Number(option.value) % 30 === 0);
+    }
+    return options;
+};
+
+/********************************\
+ * 移动端弹出删除提示框
+\********************************/
+const showMobileDeleteDialog = ref(false);
+const mobileDeleteCurrentId = ref(null);
+function showMobileDeleteDialogBtn(currentId) {
+    showMobileDeleteDialog.value = true;
+    mobileDeleteCurrentId.value = currentId;
+}
+
+/********************************\
+ * 移动端假删除
+\********************************/
+async function mobileDeleteTaskFun() {
+    const type = 1;
+    const response = await deleteTask.fetchDeleteTaskAction({
+        currentId: mobileDeleteCurrentId.value,
+        // 直接多传递一个type
+        type,
+    });
+
+    // console.log('删除的 response ===', response);
+    if (response && response.code === 200) {
+        // 清除对话框
+        showMobileDeleteDialog.value = false;
+        // 提示新建完成
+        showSuccessMessage('任务删除成功');
+        getEmployeeTasList(); // 重新获取数据
+    } else {
+        // 可以添加其他的错误处理逻辑
+        // console.log('出错了');
+        showFailMessage(response.message);
+    }
+}
+
+/********************************\
+ * 弹出层处理（修改）
+\********************************/
+const handleUpdateBeforeClose = async (action) => {
+    if (action === 'confirm') {
+        await debounceUpdateTaskFun();
+    } else {
+        showMobileUpdataDialog.value = false;
+    }
+};
+
+/********************************\
+ * 日期时间同时修改
+\********************************/
+const clearDate = () => {
+    form.planFinishDate = '';
+    form.planFinishDateTime = '';
+};
+
+/********************************\
+ * 链接复制
+\********************************/
+
+const handleCopyLink = (id) => {
+    copyLink(id);
+};
 </script>
 
 <template>
-    <div class="apply_container" v-if="authorityList.includes('WEB_TaskApply')">
+    <!-- pc页面 -->
+    <div
+        class="apply_container"
+        v-if="authorityList.includes('WEB_TaskApply') && !isMobileDevice"
+    >
         <div class="apply-box">
             <!-- 创建按钮 -->
             <create-task></create-task>
-            <!-- vxe 表格 -->
 
+            <!-- vxe 表格 -->
             <div class="apply-content">
                 <vxe-table
                     border
@@ -842,6 +1151,12 @@ const dialogWidth = computed(() => {
                         header-align="center"
                         align="right"
                     >
+                        <!-- 显示 -->
+                        <template #default="{ row }">
+                            {{ row.planFinishHour }}
+                        </template>
+
+                        <!-- 单独编辑（todo-20231101） -->
                         <template #edit="{ row }">
                             <vxe-input
                                 v-model="row.planFinishHour"
@@ -911,11 +1226,17 @@ const dialogWidth = computed(() => {
                     <vxe-column
                         field="operate"
                         title="操作"
-                        width="180px"
+                        width="220px"
                         header-align="center"
                         align="center"
                     >
                         <template #default="{ row }">
+                            <button
+                                @click="handleCopyLink(row.id)"
+                                class="copyLink"
+                            >
+                                复制链接
+                            </button>
                             <button
                                 @click="dialogFormVisibleFun(row.id)"
                                 class="update"
@@ -940,8 +1261,9 @@ const dialogWidth = computed(() => {
             title="任务申请修改"
             modal="true"
             :width="dialogWidth"
+            @close="closeUpdateDialog"
         >
-            <el-form :model="form">
+            <el-form :model="form" :disabled="isSubmitting">
                 <!-- 项目ID-选择框 -->
                 <el-form-item
                     label="项目名称"
@@ -1002,7 +1324,17 @@ const dialogWidth = computed(() => {
                     prop="name"
                     :label-width="formLabelWidth"
                 >
-                    <el-input v-model="form.planFinishHour" />
+                    <el-select
+                        placeholder="请选择计划完成小时数"
+                        v-model="form.planFinishHour"
+                    >
+                        <el-option
+                            v-for="auditUser in planFinishHourList"
+                            :key="auditUser.id"
+                            :label="auditUser.taskPoints"
+                            :value="auditUser.taskPoints"
+                        />
+                    </el-select>
                 </el-form-item>
                 <!-- 计划完成日期 -->
                 <el-form-item
@@ -1016,6 +1348,7 @@ const dialogWidth = computed(() => {
                             placeholder="选择计划完成日期"
                             style="width: 100%"
                             :disabledDate="disabledPreviousDates"
+                            @change="handleDateClose"
                         />
                     </el-col>
                     <el-col :span="2" style="text-align: center">-</el-col>
@@ -1031,12 +1364,13 @@ const dialogWidth = computed(() => {
                             step="00:30"
                             end="18:00"
                             placeholder="请选择时间"
+                            @change="handleDateTimeClose"
                         ></el-time-select>
                     </el-col>
                 </el-form-item>
                 <!-- 任务描述 -->
                 <el-form-item
-                    label="任务描述"
+                    label="任务说明"
                     prop="desc"
                     :label-width="formLabelWidth"
                 >
@@ -1045,6 +1379,7 @@ const dialogWidth = computed(() => {
                         v-model="form.taskDescription"
                         :autosize="{ minRows: 2, maxRows: 10 }"
                         :maxlength="1000"
+                        placeholder="请填写任务说明"
                     />
                 </el-form-item>
             </el-form>
@@ -1058,7 +1393,7 @@ const dialogWidth = computed(() => {
                     </el-button>
                     <el-button
                         type="primary"
-                        @click="debounceModify"
+                        @click="debounceUpdateTaskFun"
                         class="btn-sure"
                     >
                         确认
@@ -1089,9 +1424,282 @@ const dialogWidth = computed(() => {
             </template>
         </el-dialog>
     </div>
-    <div class="no-premission" v-else>您还不具备该权限！</div>
+
+    <!-- 无权限提示 -->
+    <div class="no-premission" v-if="!authorityList.includes('WEB_TaskApply')">
+        您还不具备该权限！
+    </div>
+
+    <!-- 移动设备 -->
+    <div
+        class="mobile-container"
+        v-if="authorityList.includes('WEB_TaskApply') && isMobileDevice"
+    >
+        <!-- 返回操作 -->
+
+        <!-- <van-nav-bar -->
+        <!-- title="任务申请" left-text="返回" left-arrow @click-left="goBack" -->
+        <!-- > -->
+        <!-- <template #right> -->
+        <!-- 这样做会出现闪动问题 -->
+        <!-- <create-task></create-task> -->
+        <!-- </template> -->
+        <!-- </van-nav-bar> -->
+        <!-- 使用自己的 -->
+        <div class="navbar">
+            <div class="goback" @click="goBack">
+                <van-icon name="arrow-left" />
+            </div>
+            <div class="title">任务申请</div>
+            <div class="createBtn">
+                <create-task></create-task>
+            </div>
+        </div>
+
+        <div class="noData" v-if="employeeTaskList.length == 0">
+            暂时没有更多申请任务
+        </div>
+
+        <!-- main -->
+        <div class="mobile-content">
+            <div
+                class="mobile-box"
+                v-for="task in employeeTaskList"
+                :key="task.id"
+            >
+                <!-- 任务名称 -->
+                <div class="mobile-taskName item-box">
+                    <div class="taskCard-item">项目名称</div>
+                    <div class="taskCard-content">{{ task.projectName }}</div>
+                </div>
+                <!-- 任务类型 -->
+                <div class="mobile-taskType item-box">
+                    <div class="taskCard-item">任务类型</div>
+                    <div class="taskCard-content">{{ task.taskTypeName }}</div>
+                </div>
+                <!-- 申请人 -->
+                <div class="mobile-employee item-box">
+                    <div class="taskCard-item">审批人</div>
+                    <div class="taskCard-content">
+                        {{ task.applyAuditName }}
+                    </div>
+                </div>
+
+                <!-- 计划完成时间 -->
+                <div class="mobile-planFinishHour item-box">
+                    <div class="taskCard-item">计划完成小时数</div>
+                    <div class="taskCard-content">
+                        {{ task.planFinishHour }}
+                    </div>
+                </div>
+                <!-- 计划完成日期 -->
+                <div class="mobile-planFinishDate item-box">
+                    <div class="taskCard-item">计划完成日期</div>
+                    <div class="taskCard-content">
+                        {{ task.planFinishDate }}
+                    </div>
+                </div>
+                <!-- 任务描述 -->
+                <div class="mobile-description item-box">
+                    <div class="taskCard-item">任务说明</div>
+                    <div style="margin-bottom: 10px" class="taskCard-content">
+                        {{ task.taskDescription }}
+                    </div>
+                </div>
+
+                <!-- 操作 -->
+                <div class="operate-box">
+                    <div
+                        class="mobile-copy operate"
+                        @click="handleCopyLink(task.id)"
+                    >
+                        <van-icon name="link-o" />
+                        复制链接
+                    </div>
+                    <div
+                        class="mobile-update operate"
+                        @click="showMobileUpdataDialogBtn(task.id)"
+                    >
+                        <van-icon name="edit" />
+                        修改
+                    </div>
+                    <div
+                        class="mobile-delete operate"
+                        @click="showMobileDeleteDialogBtn(task.id)"
+                    >
+                        <van-icon name="delete-o" />
+                        删除
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 修改弹出框 -->
+        <van-dialog
+            v-model:show="showMobileUpdataDialog"
+            title="任务申请修改"
+            show-cancel-button
+            @cancel="closeUpdateDialog"
+            :before-close="handleUpdateBeforeClose"
+            :close-on-click-overlay="true"
+        >
+            <van-form :disabled="isSubmitting">
+                <!-- 项目名称 -->
+                <van-field
+                    is-link
+                    readonly
+                    v-model="vantForm.vantProjectName"
+                    label="项目名称"
+                    placeholder="请选择项目"
+                    @click="showProjectPicker = true"
+                ></van-field>
+
+                <!-- 任务类型 -->
+                <van-field
+                    is-link
+                    readonly
+                    v-model="vantForm.vantTaskTypeName"
+                    label="任务类型"
+                    placeholder="请选择任务类型"
+                    @click="showTaskTypePicker = true"
+                ></van-field>
+                <!-- 审批人 -->
+                <van-field
+                    is-link
+                    readonly
+                    v-model="vantForm.vantApplyAuditName"
+                    label="审批人"
+                    placeholder="请选择审批人"
+                    @click="showAuditPicker = true"
+                ></van-field>
+
+                <!-- 计划完成小时数 -->
+                <van-field
+                    is-link
+                    readonly
+                    label="计划完成小时数"
+                    v-model="vantForm.vanPlanHourName"
+                    placeholder="请选择计划完成小时数"
+                    @click="showPlanHourPicker = true"
+                ></van-field>
+
+                <!-- 计划完成日期 -->
+                <van-cell
+                    :value="form.planFinishDate"
+                    title="计划完成日期"
+                    placeholder="请选择计划完成日期"
+                    @click="showPlanDatePicker = true"
+                >
+                    <template #right-icon>
+                        <van-icon
+                            name="close"
+                            class="close-icon"
+                            @click.stop="clearDate"
+                            :style="{
+                                display: form.planFinishDate ? 'block' : 'none',
+                            }"
+                        />
+                    </template>
+                </van-cell>
+                <!-- 计划完成时间 -->
+                <van-cell
+                    :value="form.planFinishDateTime"
+                    placeholder="请选择计划完成时间"
+                    title="计划完成时间"
+                    @click="showPlanDateTimePicker = true"
+                >
+                    <template #right-icon>
+                        <van-icon
+                            name="close"
+                            class="close-icon"
+                            @click.stop="clearDate"
+                            :style="{
+                                display: form.planFinishDateTime
+                                    ? 'block'
+                                    : 'none',
+                            }"
+                        />
+                    </template>
+                </van-cell>
+
+                <!-- 任务描述 -->
+                <van-field
+                    label="任务说明"
+                    v-model="form.taskDescription"
+                    placeholder="请填写任务说明"
+                ></van-field>
+            </van-form>
+        </van-dialog>
+
+        <!------------------------ >
+        ||在最顶部显示弹出层 
+        <-------------------------->
+        <!-- 计划完成小时数 -->
+        <van-popup v-model:show="showPlanHourPicker" round position="bottom">
+            <van-picker
+                :columns="vantPlanHourList"
+                @cancel="showPlanHourPicker = false"
+                @confirm="onPlanHourConfirm"
+            />
+        </van-popup>
+
+        <!-- 审批人 -->
+        <van-popup v-model:show="showAuditPicker" round position="bottom">
+            <van-picker
+                :columns="vantAuditUserList"
+                @cancel="showAuditPicker = false"
+                @confirm="onAuditConfirm"
+            />
+        </van-popup>
+
+        <!-- 项目名称 -->
+        <van-popup v-model:show="showProjectPicker" round position="bottom">
+            <van-picker
+                :columns="vantProjectList"
+                @cancel="showProjectPicker = false"
+                @confirm="onProjectConfirm"
+            />
+        </van-popup>
+
+        <!-- 任务类型 -->
+        <van-popup v-model:show="showTaskTypePicker" round position="bottom">
+            <van-picker
+                :columns="vantTaskTypeList"
+                @cancel="showTaskTypePicker = false"
+                @confirm="onTaskTypeConfirm"
+            />
+        </van-popup>
+
+        <!-- 完成日期 -->
+        <van-calendar
+            v-model:show="showPlanDatePicker"
+            @confirm="onPlanDateConfirm"
+        ></van-calendar>
+
+        <!-- 完成时间 -->
+        <van-popup v-model:show="showPlanDateTimePicker" position="bottom">
+            <van-time-picker
+                title="选择时间"
+                @confirm="onPlanDateTimeConfirm"
+                :filter="filter"
+                @click="showPlanDateTimePicker = false"
+            ></van-time-picker>
+        </van-popup>
+
+        <!-- 删除弹出框 -->
+        <van-dialog
+            v-model:show="showMobileDeleteDialog"
+            title="任务申请删除"
+            show-cancel-button
+            @confirm="mobileDeleteTaskFun"
+            :close-on-click-overlay="true"
+        >
+            <div class="delete-content">请确认是否删除任务申请。</div>
+        </van-dialog>
+    </div>
 </template>
 
+<!-- pc端样式 -->
 <style scoped lang="scss">
 @import '../../assets/css/variables.scss';
 
@@ -1106,8 +1714,8 @@ const dialogWidth = computed(() => {
 
 .apply_container {
     // TODO: 添加样式
-    width: 100%;
-    // margin: 25px auto;
+    width: calc(100vw - 160px);
+
     .apply-box {
         margin-top: 15px;
         padding-bottom: 15px;
@@ -1127,6 +1735,17 @@ const dialogWidth = computed(() => {
         height: 26px;
     }
 
+    .copyLink {
+        border: none;
+        border-radius: 2px;
+        background-color: #fff0eb;
+        font-size: 12px;
+        font-family: Microsoft YaHei;
+        font-weight: 400;
+        color: #ff6b3b;
+        padding: 3px 10px;
+    }
+
     .update {
         background-color: #c6eddc;
         font-size: 12px;
@@ -1143,6 +1762,12 @@ const dialogWidth = computed(() => {
         color: #e41731;
     }
 
+    .copyLink:hover {
+        background-color: #ff6b3b;
+        color: #fff;
+        cursor: pointer;
+    }
+
     .update:hover {
         color: #fff;
         background-color: #04c18c;
@@ -1156,7 +1781,7 @@ const dialogWidth = computed(() => {
     }
 
     .update {
-        margin-right: 11px;
+        margin: 0 11px;
     }
 
     // 对话框按钮样式
@@ -1201,5 +1826,90 @@ const dialogWidth = computed(() => {
     .el-dialog__headerbtn:hover .el-dialog__close {
         color: $color-bfont;
     }
+}
+</style>
+
+<!-- 移动端样式 -->
+<style scoped lang="scss">
+.mobile-container {
+    background-color: #f3f7ff;
+    .navbar {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        padding: 15px 18px 10px 18px;
+        background-color: #fff;
+    }
+
+    .delete-content {
+        padding-top: 20px;
+        padding-bottom: 20px;
+        padding-left: 10px;
+        // text-align: center;
+    }
+}
+
+.noData {
+    margin: 150px auto;
+    text-align: center;
+}
+
+.mobile-content {
+    width: auto;
+    margin: 18px 16px 0px 16px;
+    border-radius: 16px;
+    padding-bottom: 20px;
+}
+
+.mobile-box {
+    margin-bottom: 20px;
+    background-color: #fff;
+    padding: 12px 15px 0px 15px;
+    border-radius: 16px;
+}
+.item-box {
+    display: flex;
+    width: 100%;
+}
+
+.item-box :not(:last-child) {
+    margin-bottom: 10px;
+}
+
+// taskCard-item的宽度控制
+.taskCard-item {
+    min-width: 120px;
+    color: #333;
+}
+.taskCard-content {
+    color: #666;
+}
+
+.mobile-description {
+    border-bottom: 1px solid #d7d7d7;
+}
+
+.operate-box {
+    display: flex;
+    justify-content: flex-end;
+    flex-direction: flex-end;
+    margin: 5px 10px;
+}
+
+.operate {
+    color: #666;
+    padding: 4px 5px;
+    margin-bottom: 2px;
+}
+
+.mobile-delete {
+    margin-left: 5px;
+}
+
+.close-icon {
+    font-size: 16px;
+    line-height: inherit;
+    padding: 0 10px;
+    color: #666;
 }
 </style>

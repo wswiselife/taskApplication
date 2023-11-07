@@ -16,55 +16,41 @@
 -->
 <script setup>
 import { useRouter } from 'vue-router';
-import { userLogout } from '@/api/modules/user';
 
 // import Create from './create/Create.vue';
 import { ElMessage } from 'element-plus';
 import { ref, computed } from 'vue';
 import debounce from 'lodash/debounce';
+// 链接审批数据共享
+import { useIsLinkApprovalStore } from '@/store/public';
 /********************************\
  * 公共引入处理
 \********************************/
 const router = useRouter();
+const isLinkApprovalStore = useIsLinkApprovalStore();
 
+// 设备检测
+import { isMobileDevice } from '@/utils/device/isMobile';
+import { storeToRefs } from 'pinia';
+import { clearCacheFun } from '@/utils/clear-cache/clearCache';
 /********************************\
  * 退出登录
 \********************************/
 async function logoutbtn() {
-    const response = await userLogout();
-    // console.log('退出登录 response ===', response);
-    if (response.code === 200) {
-        // 清除本地缓存
-        localStorage.removeItem('token');
-        localStorage.removeItem('authorityList');
+    // 清除本地缓存
+    clearCacheFun();
 
-        ElMessage({
-            message: '已正常退出',
-            type: 'success',
-        });
+    ElMessage({
+        message: '已正常退出',
+        type: 'success',
+    });
 
-        router.push({ path: '/login' });
+    router.push({ path: '/login' });
 
-        // 禁止浏览器的后退功能
-        window.addEventListener('popstate', function () {
-            history.go(1);
-        });
-    } else {
-        router.push({ path: '/login' });
-        ElMessage({
-            message: response.message,
-            type: 'error',
-        });
-        // 注销失败，打印错误信息
-        // console.error('注销失败:', response.message);
-        localStorage.removeItem('token');
-        localStorage.removeItem('authorityList');
-
-        // 禁止浏览器的后退功能
-        window.addEventListener('popstate', function () {
-            history.go(1);
-        });
-    }
+    // 禁止浏览器的后退功能
+    window.addEventListener('popstate', function () {
+        history.go(1);
+    });
 }
 
 /********************************\
@@ -73,17 +59,27 @@ async function logoutbtn() {
 const username = ref(localStorage.getItem('username') || '?');
 
 const firstLetter = computed(() => {
-    return username.value && username.value.length > 0 ? username.value[0] : '';
+    return username.value && username.value.length > 0
+        ? username.value[0].toUpperCase()
+        : '';
 });
 
 /********************************\
  * 防抖
 \********************************/
 const debounceLogoutBtn = debounce(logoutbtn, 600);
+
+/********************************\
+ * 单独审批
+\********************************/
+const { isLinkApproval } = storeToRefs(isLinkApprovalStore);
+// 持久化的问题
+// const showLogoutBtn = isLinkApprovalStore.isLinkApproval;
 </script>
 
 <template>
-    <div class="navbar_container">
+    <!-- pc端 -->
+    <div class="navbar_container" v-if="!isMobileDevice">
         <!-- navbar 左侧 -->
         <div class="navbar_left">
             <!-- logo -->
@@ -94,9 +90,14 @@ const debounceLogoutBtn = debounce(logoutbtn, 600);
             <!-- <create></create> -->
         </div>
 
+        <!-- 控制下拉弹出框的写法 -->
         <div class="navbar_right">
             <!-- 退出登录 -->
-            <el-button class="logout" @click="debounceLogoutBtn">
+            <el-button
+                class="logout"
+                @click="debounceLogoutBtn"
+                v-if="!isLinkApproval"
+            >
                 退出登录
             </el-button>
 
@@ -104,19 +105,35 @@ const debounceLogoutBtn = debounce(logoutbtn, 600);
             <!-- <span class="username">{{ username }}</span> -->
             <div class="username_first_letter">{{ firstLetter }}</div>
             <!-- todo -->
+            <!-- 省略号按钮，仅在移动设备上显示 -->
+        </div>
+    </div>
+
+    <!-- 移动端 -->
+    <div class="mobile-container" v-if="isMobileDevice">
+        <!-- 背景 -->
+        <div class="mobile-navbg">
+            <!-- 首字母 -->
+            <div class="user-firstletter">
+                {{ firstLetter }}
+            </div>
+            <!-- 退出登录 -->
+            <div class="mobile-logout" @click="debounceLogoutBtn">退出登录</div>
         </div>
     </div>
 </template>
 
+<!-- pc端 -->
 <style scoped lang="scss">
 @import '../../assets/css/variables.scss';
+
 .navbar_container {
     width: 100%;
     height: 70px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0px 10px 17px #000;
+    box-shadow: 0px 1px 7px 0px rgba(123, 142, 223, 0.4);
     z-index: 999;
 
     .navbar_left {
@@ -130,6 +147,7 @@ const debounceLogoutBtn = debounce(logoutbtn, 600);
 
     .logo {
         height: 27px;
+        padding-right: 23px;
     }
 
     .navbar_right {
@@ -138,10 +156,11 @@ const debounceLogoutBtn = debounce(logoutbtn, 600);
         flex-direction: center;
         align-items: center;
         height: 100%;
-        margin-right: 49px;
+        margin-right: 39px;
     }
 
     .logout {
+        // display: none;
         width: 104px;
         height: 42px;
         background: #edf0ff;
@@ -164,7 +183,7 @@ const debounceLogoutBtn = debounce(logoutbtn, 600);
         font-family: Microsoft YaHei;
         font-size: 24px;
         text-align: center;
-        line-height: 35px;
+        line-height: 42px;
         font-weight: 400;
         width: 40px;
         height: 40px;
@@ -172,6 +191,55 @@ const debounceLogoutBtn = debounce(logoutbtn, 600);
         border-radius: 50%;
         background-color: #1768e4;
         margin-left: 26px;
+    }
+}
+.popover {
+    margin-right: 15px;
+}
+.ellipsis {
+}
+</style>
+
+<!-- 移动端 -->
+<style scoped lang="scss">
+.mobile-container {
+    height: 25%;
+    width: 100%;
+    min-height: 200px;
+    background-image: url('../../../public/moble-bgi.png');
+    background-size: 100% 100%;
+
+    .mobile-navbg {
+        margin: 0 auto;
+        width: 120px;
+        // height: 120px;
+
+        // background-color: #333;
+        display: flex;
+        align-items: center;
+        flex-direction: column;
+        padding-top: 30px;
+    }
+
+    .user-firstletter {
+        margin-top: 16%;
+        width: 80px;
+        height: 80px;
+        background-color: #fff;
+        border-radius: 50%;
+        font-size: 52px;
+        font-weight: 400;
+        text-align: center;
+        line-height: 80px;
+        color: #1768e4;
+    }
+
+    .mobile-logout {
+        margin-top: 22px;
+        padding: 8px 15px;
+        background-color: #fff;
+        border-radius: 24px;
+        color: #1768e4;
     }
 }
 </style>

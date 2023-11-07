@@ -23,10 +23,10 @@ const validatePoint = (PointInput) => {
     // console.log('inputStr ===', inputStr);
 
     // 检查是否为空字符串
-    if (!inputStr) {
+    if (!PointInput) {
         return {
             isValid: false,
-            message: '点数不能为空',
+            message: '任务点数不能为空。',
         };
     }
 
@@ -34,7 +34,7 @@ const validatePoint = (PointInput) => {
     if (inputStr.split('.').length - 1 > 1) {
         return {
             isValid: false,
-            message: '点数输入不能包含多于一个的小数点',
+            message: '任务点数输入不能包含多于一个的小数点。',
         };
     }
 
@@ -43,7 +43,7 @@ const validatePoint = (PointInput) => {
     if (decimalPart && decimalPart.length > 1) {
         return {
             isValid: false,
-            message: '小数点后最多只能有一位数字',
+            message: '输入任务点数的小数点后最多只能有一位数字。',
         };
     }
 
@@ -51,7 +51,7 @@ const validatePoint = (PointInput) => {
     if (/\s/.test(inputStr)) {
         return {
             isValid: false,
-            message: '输入不能包含空格',
+            message: '输入的任务点数不能包含空格。',
         };
     }
 
@@ -59,21 +59,21 @@ const validatePoint = (PointInput) => {
     if (!/^(0(\.\d)?|[1-9]\d*(\.\d)?)$/.test(inputStr)) {
         return {
             isValid: false,
-            message: '请输入有效的点数格式',
+            message: `${inputStr}的格式错误,请输入有效的数字。`,
         };
     }
 
     const point = parseFloat(inputStr);
     // 确保小时数在0到1000之间
-    if (point > 0 && point <= 1000) {
+    if (point >= 0 && point <= 1000) {
         return {
             isValid: true,
-            message: '输入的点数有效',
+            message: '输入的任务点数有效。',
         };
     } else {
         return {
             isValid: false,
-            message: '输入的点数超出范围（0-1000）',
+            message: '输入的任务点数超出0-1000范围。',
         };
     }
 };

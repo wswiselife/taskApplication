@@ -9,12 +9,19 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-
+import { isMobileDevice } from '@/utils/device/isMobile';
+// 链接审批数据共享
+import { useIsLinkApprovalStore } from '@/store/public';
+import { storeToRefs } from 'pinia';
 /********************************\ 
  * 公共引入处理
 \********************************/
 const router = useRouter();
 const route = useRoute();
+
+const isLinkApprovalStore = useIsLinkApprovalStore();
+
+const { isLinkApproval } = storeToRefs(isLinkApprovalStore);
 
 /********************************\ 
  * 获取权限处理
@@ -72,7 +79,7 @@ const isURLListRouteActive = computed(() => {
 </script>
 
 <template>
-    <div class="sidebar_container">
+    <div class="sidebar_container" v-if="!isMobileDevice && !isLinkApproval">
         <el-menu class="el_menu">
             <!-- 没有子选项 -->
             <el-menu-item

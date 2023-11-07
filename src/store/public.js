@@ -53,3 +53,18 @@ export const useIsCreatedURLStore = defineStore('isCreatedURL', {
         },
     },
 });
+
+// 是否是链接的审批操作
+export const useIsLinkApprovalStore = defineStore('isLinkApproval', {
+    state: () => {
+        return {
+            isLinkApproval: false,
+        };
+    },
+    actions: {
+        setIsLinkApproval(payload) {
+            // console.log('payload ===', payload);
+            this.isLinkApproval = payload;
+        },
+    },
+});

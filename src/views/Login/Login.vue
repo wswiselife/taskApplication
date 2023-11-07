@@ -16,16 +16,19 @@
 -->
 <script setup>
 import { reactive, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { useUserLoginStore } from '../../store/modules/user';
 import { ElMessage } from 'element-plus';
 import { useUserIdStore } from '@/store/public';
 import debounce from 'lodash/debounce';
+// 设备检测
+import { isMobileDevice } from '@/utils/device/isMobile';
 
 /********************************\
  * 公共引入处理
 \********************************/
 const router = useRouter();
+const route = useRoute();
 const userLoginStore = useUserLoginStore();
 const userIdStore = useUserIdStore();
 
@@ -63,29 +66,44 @@ async function loginbtn() {
 
     // 发送登录请求
     const response = await userLoginStore.fetchUserLoginAction(form);
-    console.log('登录 response ===', response);
+    // console.log('登录 response ===', response);
     if (response.code === 200) {
         // 存储 token 和 authorityList 到 localStorage
         localStorage.setItem('token', response.result.token);
         localStorage.setItem('username', form.account); // 存储用户名到本地
+        // 存储用户的id到store中
+        userIdStore.saveUserId(response.result.userId);
         localStorage.setItem(
             'authorityList',
             JSON.stringify(response.result.authorityList),
         );
 
-        // 存储用户的id到store中
-        userIdStore.saveUserId(response.result.userId);
-
         // 检查是否具有管理员权限
         const hasAdminAuthority =
             response.result.authorityList.includes('WEB_TaskApplyAudit');
 
-        // 根据权限跳转到相应的页面
-        if (hasAdminAuthority) {
-            router.push({ path: '/dashboard/approval' }); // 第一个页面
+        // 获取当前路由的taskId参数
+        const taskId = route.query.taskId;
+
+        let path = {};
+        let query = {};
+        if (taskId) {
+            path = '/dashboard/approval';
+            query.taskId = taskId;
         } else {
-            router.push({ path: '/dashboard/apply' }); // 第二个页面
+            // 移动设备
+            if (isMobileDevice) {
+                path = '/mobileexplore';
+            } else {
+                // pc设备
+                path = hasAdminAuthority
+                    ? '/dashboard/approval'
+                    : '/dashboard/apply';
+            }
         }
+
+        // 重定向到指定路径，并保留所有查询参数
+        router.push({ path, query });
     } else {
         console.log('response.message ===', response.message);
         ElMessage({

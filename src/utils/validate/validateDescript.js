@@ -3,7 +3,7 @@ export const validateDescriptionInput = (description) => {
     if (!description) {
         return {
             isValid: false,
-            message: '请填写任务描述',
+            message: '请填写任务描述。',
         };
     }
 
@@ -14,7 +14,7 @@ export const validateDescriptionInput = (description) => {
     if (trimmedDescription.length < 10 || trimmedDescription.length > 1000) {
         return {
             isValid: false,
-            message: '任务描述长度必须在10到1000字符之间',
+            message: '任务描述长度必须在10到1000字符之间。',
         };
     }
 

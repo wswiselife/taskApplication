@@ -11,6 +11,10 @@ import { useIsCreatedURLStore } from '@/store/public';
 import { ElMessage } from 'element-plus';
 import { useRouter } from 'vue-router';
 import debounce from 'lodash/debounce';
+// 设备检测
+import { isMobileDevice } from '@/utils/device/isMobile';
+import { showFailToast } from 'vant';
+
 /********************************\
  * 公共引入处理
 \********************************/
@@ -86,23 +90,37 @@ const form = reactive({
 
 const updateURLListStore = useUpdateURLListStore();
 const updateURLFun = async () => {
+    if (!form.description) {
+        if (isMobileDevice) {
+            showFailToast('网站说明不能为空');
+        } else {
+            ElMessage({
+                message: '网站说明不能为空',
+                type: 'error',
+            });
+        }
+        return;
+    }
+
+    if (!form.url) {
+        if (isMobileDevice) {
+            showFailToast('网站地址不能为空');
+        } else {
+            ElMessage({
+                message: '网站地址不能为空',
+                type: 'error',
+            });
+        }
+        return;
+    }
+
     // 确定修改的id
     form.id = updateCurrentId.value;
     // 发送请求
+    // 打开禁止编辑表单
+    isSubmitting.value = true;
     const response = await updateURLListStore.fetchUpdteURLListAction(form);
     // console.log('update response ===', response);
-
-    if (response && response.code === 401) {
-        ElMessage({
-            type: 'error',
-            message: response.message,
-        });
-        router.push({ path: '/login' });
-        // 禁止浏览器的后退功能
-        window.addEventListener('popstate', function () {
-            history.go(1);
-        });
-    }
 
     if (response && response.code === 200) {
         ElMessage({
@@ -112,7 +130,13 @@ const updateURLFun = async () => {
         // 重新渲染列表
         getURLList();
         updateDialogVisible.value = false;
+        showMobileUpdataDialog.value = false;
+        // 成功后关闭禁止编辑表单
+        isSubmitting.value = false;
     } else {
+        showMobileUpdataDialog.value = false;
+        // 成功后关闭禁止编辑表单
+        isSubmitting.value = false;
         ElMessage({
             type: 'error',
             message: response.message,
@@ -170,14 +194,74 @@ const debounceUpdateURLFun = debounce(updateURLFun, 600);
  * 防抖处理
 \********************************/
 const debounceDeleteURLFun = debounce(deleteURLFun, 600);
+
+/********************************\
+ * 处理提交之后网络延迟可以继续修改表单问题
+\********************************/
+const isSubmitting = ref(false);
+
+const closeUpdateDialog = () => {
+    isSubmitting.value = false;
+};
+
+/********************************\
+ * 移动端返回上一步
+\********************************/
+const goBack = () => {
+    router.push({ path: '/mobileexplore' });
+};
+/********************************\
+ * 移动端修改补全函数
+\********************************/
+const showMobileUpdataDialog = ref(false);
+
+// 补全数据
+const showMobileUpdataDialogBtn = (currentId) => {
+    showMobileUpdataDialog.value = true;
+    updateCurrentId.value = currentId;
+
+    // 将已有数据填写到表单中
+    // todo
+    const selectedItem = urllist.value.find(
+        (item) => item.id === updateCurrentId.value,
+    );
+
+    if (selectedItem) {
+        form.description = selectedItem.description;
+        form.url = selectedItem.url;
+    }
+};
+
+/********************************\
+ * 移动端弹出删除提示框
+\********************************/
+const showMobileDeleteDialog = ref(false);
+
+// 删除弹出框显示
+function showMobileDeleteDialogBtn(currentId) {
+    showMobileDeleteDialog.value = true;
+    deleteCurrentId.value = currentId;
+}
+
+/********************************\
+ * 弹出层处理（修改）
+\********************************/
+const handleUpdateBeforeClose = async (action) => {
+    if (action === 'confirm') {
+        await debounceUpdateURLFun();
+    } else {
+        showMobileUpdataDialog.value = false;
+    }
+};
 </script>
 
 <template>
+    <!-- pc端 -->
     <div
-        class="approval_container"
-        v-if="authorityList.includes('WEB_URLList')"
+        class="urllist_container"
+        v-if="authorityList.includes('WEB_URLList') && !isMobileDevice"
     >
-        <div class="urllist_container">
+        <div class="urllist-content">
             <CreateURL></CreateURL>
 
             <div class="urllist-box">
@@ -239,8 +323,13 @@ const debounceDeleteURLFun = debounce(deleteURLFun, 600);
         </div>
 
         <!-- 修改弹出框 -->
-        <el-dialog title="网址修改" v-model="updateDialogVisible" modal="true">
-            <el-form :model="form">
+        <el-dialog
+            title="网址修改"
+            v-model="updateDialogVisible"
+            modal="true"
+            @close="closeUpdateDialog"
+        >
+            <el-form :model="form" :disabled="isSubmitting">
                 <!-- 描述内容 -->
                 <el-form-item
                     label="网址说明"
@@ -302,12 +391,114 @@ const debounceDeleteURLFun = debounce(deleteURLFun, 600);
             </template>
         </el-dialog>
     </div>
+
+    <!-- 移动端 -->
+    <div
+        class="mobile-container"
+        v-if="authorityList.includes('WEB_URLList') && isMobileDevice"
+    >
+        <!-- 返回操作 -->
+        <div class="turnback_container">
+            <div class="navbar">
+                <div class="goback" @click="goBack">
+                    <van-icon name="arrow-left" />
+                </div>
+                <div class="title">网站管理</div>
+                <div class="createBtn">
+                    <CreateURL></CreateURL>
+                </div>
+            </div>
+        </div>
+
+        <div class="noData" v-if="urllist.length == 0">
+            暂时没有更多网站数据
+        </div>
+        <!-- main -->
+        <div class="mobile-content">
+            <div
+                class="mobile-box"
+                v-for="urlItem in urllist"
+                :key="urlItem.id"
+            >
+                <!-- 网站说明： -->
+                <div class="mobile-urldescription item-box">
+                    <div class="taskCard-item">网址说明</div>
+                    <div class="taskCard-content">
+                        {{ urlItem.description }}
+                    </div>
+                </div>
+                <!-- 网站地址： -->
+                <div class="mobile-url item-box">
+                    <div class="taskCard-item">网址</div>
+                    <a :href="urlItem.url" target="_blank">{{ urlItem.url }}</a>
+                </div>
+                <!-- 操作 -->
+                <div class="operate-box">
+                    <div
+                        class="mobile-update operate"
+                        @click="showMobileUpdataDialogBtn(urlItem.id)"
+                    >
+                        <van-icon name="edit" />
+                        修改
+                    </div>
+
+                    <div
+                        class="mobile-delete operate"
+                        @click="showMobileDeleteDialogBtn(urlItem.id)"
+                    >
+                        <van-icon name="delete-o" />
+                        删除
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 修改弹出框 -->
+        <van-dialog
+            v-model:show="showMobileUpdataDialog"
+            title="网址管理修改"
+            show-cancel-button
+            :before-close="handleUpdateBeforeClose"
+            :close-on-click-overlay="true"
+            @cancel="closeUpdateDialog"
+        >
+            <van-form :disabled="isSubmitting">
+                <!-- 网站描述 -->
+                <van-field
+                    label="网址说明"
+                    v-model="form.description"
+                    placeholder="请输入网址说明"
+                ></van-field>
+                <!-- 计划完成时间 -->
+                <van-field
+                    label="网址"
+                    v-model="form.url"
+                    placeholder="请输入网址"
+                ></van-field>
+            </van-form>
+        </van-dialog>
+
+        <!-- 删除弹出框 -->
+        <van-dialog
+            v-model:show="showMobileDeleteDialog"
+            title="删除网址"
+            show-cancel-button
+            @confirm="debounceDeleteURLFun"
+            :close-on-click-overlay="true"
+        >
+            <div class="delete-content">请确认是否删除网址。</div>
+        </van-dialog>
+    </div>
 </template>
 
+<!-- pc端样式 -->
 <style scoped lang="scss">
 .urllist_container {
     margin-top: 15px;
-    // padding-bottom: 15px;
+    width: calc(100vw - 160px);
+}
+
+.urllist-content {
     margin-inline: 16px;
     background-color: #fff;
     border-radius: 2px;
@@ -397,5 +588,83 @@ const debounceDeleteURLFun = debounce(deleteURLFun, 600);
 .btn-sure:hover {
     background: #2b8aec;
     color: #ffffff;
+}
+</style>
+
+<!-- 移动端样式 -->
+<style scoped lang="scss">
+.mobile-container {
+    // width: 100%;
+    background-color: #f3f7ff;
+}
+.navbar {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 15px 18px 10px 18px;
+    background-color: #fff;
+}
+
+.delete-content {
+    padding-top: 20px;
+    padding-bottom: 20px;
+    padding-left: 10px;
+    // text-align: center;
+}
+.noData {
+    margin: 150px auto;
+    text-align: center;
+}
+.mobile-content {
+    width: auto;
+    margin: 18px 16px 0px 16px;
+    border-radius: 16px;
+    padding-bottom: 20px;
+}
+
+.mobile-box {
+    margin-bottom: 20px;
+    background-color: #fff;
+    padding: 12px 15px 0px 15px;
+    border-radius: 16px;
+}
+.item-box {
+    display: flex;
+    width: 100%;
+}
+
+.item-box :not(:last-child) {
+    margin-bottom: 10px;
+}
+
+// taskCard-item的宽度控制
+.taskCard-item {
+    min-width: 120px;
+    color: #333;
+}
+
+.taskCard-content {
+    color: #666;
+}
+
+.mobile-url {
+    border-bottom: 1px solid #d7d7d7;
+}
+
+.operate-box {
+    display: flex;
+    justify-content: flex-end;
+    flex-direction: flex-end;
+    margin: 5px 10px;
+}
+
+.operate {
+    color: #666;
+    padding: 4px 5px;
+    margin-bottom: 2px;
+}
+
+.mobile-delete {
+    margin-left: 5px;
 }
 </style>

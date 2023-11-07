@@ -31,5 +31,6 @@ module.exports = {
     plugins: ['vue'],
     rules: {
         'vue/multi-word-component-names': 'off',
+        'no-useless-escape': 'off',
     },
 };

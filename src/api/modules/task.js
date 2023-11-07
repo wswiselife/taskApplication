@@ -13,7 +13,7 @@ import { request } from '../index';
 \********************************/
 // 新建任务
 export const createTask = (data) => {
-    // console.log('data ===', data);
+    // console.log('api的data ===', data);
     return request.post('/jsy/TaskApply/AddTaskApply', {
         taskDescription: data.taskDescription,
         projectId: data.projectId,
@@ -78,6 +78,7 @@ export const deleteTaskData = (data) => {
 \********************************/
 
 export const agreeTaskData = (data) => {
+    // console.log('data ===', data);
     return request.post('/jsy/TaskApply/TaskApplyAudit', {
         taskApplyId: data.chooseAgreeId,
         taskPoints: data.point,
@@ -85,4 +86,11 @@ export const agreeTaskData = (data) => {
         planFinishHour: data.finishHour,
         taskDescription: data.taskDescription,
     });
+};
+
+/********************************\
+ * 计划完成小时数（改为选择）
+\********************************/
+export const getPlanFinishHourData = () => {
+    return request.get('/jsy/TaskPoint/GetTaskPointList');
 };

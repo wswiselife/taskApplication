@@ -7,21 +7,17 @@
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
 import axios from 'axios';
-import { ElMessage } from 'element-plus';
+
 //引入nprogress 进度条插件
 import NProgress from 'nprogress';
-// 路由跳转(.js文件不是这样条状的)
+// 路由跳转(.js文件不是这样跳转的)
 import router from '@/router';
-// 开发环境配置
-// const processENV = () => {
-//     if (import.meta.env.VITE_API_URL === 'development') {
-//         return process.env.VITE_API_URL;
-//     }
-// };
+import { clearCacheFun } from '@/utils/clear-cache/clearCache';
+import { showFailMessage } from '@/utils/show-message/showSFmessage';
 
 const request = axios.create({
     baseURL: import.meta.env.VITE_API_URL,
-    timeout: 10000,
+    timeout: 5000,
 });
 
 // 请求拦截器
@@ -40,6 +36,8 @@ request.interceptors.request.use(
     (error) => {
         // 关闭进度条
         NProgress.done();
+        // 其他未知错误
+        showFailMessage(error);
         return Promise.reject(error);
     },
 );
@@ -49,12 +47,12 @@ let is401HandlingInProgress = false;
 const handle401Error = () => {
     if (!is401HandlingInProgress) {
         is401HandlingInProgress = true;
-        localStorage.removeItem('token'); // 清除 token
+
+        // 清除缓存
+        clearCacheFun();
         if (!is401MessageShown) {
-            ElMessage({
-                message: '验证身份失败，三秒后即将跳转登录页',
-                type: 'error',
-            });
+            showFailMessage('验证身份失败，三秒后即将跳转登录页');
+
             is401MessageShown = true;
             setTimeout(() => {
                 is401MessageShown = false;
@@ -71,7 +69,7 @@ request.interceptors.response.use(
     (response) => {
         // 关闭进度条
         NProgress.done();
-        console.log('response.data:', response);
+        // console.log('response.data:', response);
         if (response.status == 200) {
             if (response.data.code == 200) {
                 return response.data;
@@ -79,17 +77,11 @@ request.interceptors.response.use(
                 handle401Error();
                 return;
             } else if (response.data.code >= 400 && response.data.code < 500) {
-                ElMessage({
-                    message: response.data.message || '请求错误',
-                    type: 'error',
-                });
+                showFailMessage(response.data.message);
                 return Promise.reject(response.data.message);
             } else {
                 // 其他未知错误
-                ElMessage({
-                    message: response.data.message,
-                    type: 'error',
-                });
+                showFailMessage(response.data.message);
                 return Promise.reject(response.data.message);
             }
         } else {
@@ -100,6 +92,7 @@ request.interceptors.response.use(
     (error) => {
         // 关闭进度条
         NProgress.done();
+        // showFailMessage(error);
         return Promise.reject(error);
     },
 );

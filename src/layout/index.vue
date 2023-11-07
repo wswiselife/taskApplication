@@ -18,18 +18,28 @@
 import Navbar from './navBar/NavBar.vue';
 import sidebar from './sideBar/SideBar.vue';
 // import AppMain from './appMain/AppMain.vue';
+// 设备检测
+import { isMobileDevice } from '@/utils/device/isMobile';
+// 链接审批数据共享
+import { useIsLinkApprovalStore } from '@/store/public';
+import { storeToRefs } from 'pinia';
+const isLinkApprovalStore = useIsLinkApprovalStore();
+const { isLinkApproval } = storeToRefs(isLinkApprovalStore);
 </script>
 
 <template>
     <div class="layout_container">
         <!-- NavBar -->
-        <div class="navbar">
+        <div class="navbar" v-if="!isMobileDevice">
             <Navbar></Navbar>
         </div>
 
-        <div class="sidebar_appmain_container">
+        <div
+            class="sidebar_appmain_container"
+            :style="{ height: isMobileDevice ? '100%' : 'calc(100vh - 70px)' }"
+        >
             <!-- SideBar -->
-            <div class="sidebar">
+            <div class="sidebar" v-if="!isMobileDevice && !isLinkApproval">
                 <sidebar></sidebar>
             </div>
             <!-- AppMain -->
@@ -54,28 +64,28 @@ import sidebar from './sideBar/SideBar.vue';
     // background-color: $color-four;
 
     .navbar {
-        width: 100%;
-        height: 70px;
+        width: auto;
         background: #ffffff;
-        box-shadow: 0px 10px 17px #000;
         z-index: 999;
         // border-bottom: 1px solid black;
     }
 
     .sidebar_appmain_container {
-        height: calc(100vh - 70px);
         display: flex;
         justify-content: flex-start;
     }
 
     .sidebar {
+        // display: none;
         height: 100%;
-        width: 160px;
+        min-width: 160px;
         background: #ffffff;
     }
 
     .app_main {
-        width: calc(100vw - 160px);
+        // width: calc(100vw - 160px);
+        width: 100%;
+        height: 100%;
         background: #f3f7ff;
     }
 }

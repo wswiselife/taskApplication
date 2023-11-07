@@ -28,6 +28,11 @@ import 'nprogress/nprogress.css';
 // 引入vxe-table
 import VXETable from 'vxe-table';
 import 'vxe-table/lib/style.css';
+// 引入vant
+import Vant from 'vant';
+import 'vant/lib/index.css';
+// showToast
+import { Toast } from 'vant';
 
 const app = createApp(App);
 
@@ -43,4 +48,10 @@ app.use(ElementPlus, {
     locale: zhCn,
 });
 
-app.use(router).use(ElementPlus).use(pinia).use(useTable).mount('#app');
+app.use(router)
+    .use(ElementPlus)
+    .use(pinia)
+    .use(useTable)
+    .use(Vant)
+    .use(Toast)
+    .mount('#app');
