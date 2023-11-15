@@ -95,7 +95,9 @@ async function createURLBtn() {
 \********************************/
 const descriptionRef = ref(null);
 const focusInput = () => {
-    descriptionRef.value.focus();
+    if (descriptionRef.value) {
+        descriptionRef.value.focus();
+    }
 };
 
 /********************************\
@@ -144,7 +146,7 @@ const handleCreateBeforeClose = async (action) => {
         <!-- 弹出框 -->
         <el-dialog
             v-model="dialogFormVisible"
-            title="网址新增"
+            title="网址管理新增"
             modal="true"
             class="dialog-content"
             @opened="focusInput"
@@ -199,7 +201,7 @@ const handleCreateBeforeClose = async (action) => {
         <!-- 新增弹出框 -->
         <van-dialog
             v-model:show="showMobileCreateDialog"
-            title="网址新增"
+            title="网址管理新增"
             show-cancel-button
             :before-close="handleCreateBeforeClose"
             :close-on-click-overlay="true"

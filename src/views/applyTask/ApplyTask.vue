@@ -89,31 +89,34 @@ import {
  * 获取权限处理
 \********************************/
 const authorityList = ref([]);
-onMounted(() => {
+/********************************\
+ * 公共引入处理
+\********************************/
+// 数据加载中
+const isDataLoaded = ref(false);
+onMounted(async () => {
     // 从 localStorage 中获取权限信息
     const storedAuthorityList = localStorage.getItem('authorityList');
     if (storedAuthorityList) {
         authorityList.value = JSON.parse(storedAuthorityList);
     }
-});
-/********************************\
- * 公共引入处理
-\********************************/
-
-onMounted(() => {
     // 进入时获取列表数据
-    getEmployeeTasList();
+    await getEmployeeTasList();
+
     // 本来下面四个是不需要的，单独修改可以当获得焦点的时候再请求对应的接口
     // 但是一开始后端并没有直接给对应的文字信息，一开始给的是这些接口的id,所以为了展示内容，要获取她们
     // id对应的文字信息，所以进入的时候要多请求四个接口，如果一开始就有文字信息，可以只获取一个
     // 调用用户权限项目接口
-    getUserProjectList();
+    // do(20231114)
+    // getUserProjectList();
     // 调用获取任务类型接口
-    getTaskTypeList();
+    // getTaskTypeList();
     // 调用审批人接口
-    getAuditUserList();
+    // getAuditUserList();
     // 计划完成小时数选择修改
-    getPlanFinishList();
+    // getPlanFinishList();
+    // 得到数据之后，获取成功
+    isDataLoaded.value = true;
 });
 
 // 修改的选项的权限获取
@@ -136,7 +139,13 @@ const router = useRouter();
 \********************************/
 async function getEmployeeTasList() {
     // 想拿到状态码，store中要返回promise，这里要使用async/await
-    await employeeTaskStore.fetchEmployeeTaskAction();
+    try {
+        // 返回值通过store获取，这里只负责发送请求
+        await employeeTaskStore.fetchEmployeeTaskAction();
+    } catch (error) {
+        showFailMessage(error);
+    }
+
     // console.log('申请列表数据 ====', employeeTaskList);
     // console.log('页面中的response ===', response.code);
 }
@@ -489,9 +498,10 @@ function handleCellActivated({ row, column }) {
     getAuditUserList();
     // todo(20231101)
     // 单个修改计划完成时间选择
+    getPlanFinishList();
 
     prevValue.value = row.id;
-    console.log('当前行 prevValue.value ===', prevValue.value);
+    // console.log('当前行 prevValue.value ===', prevValue.value);
 
     if (column.property === 'taskDescription') {
         oldValue.value = row.taskDescription;
@@ -509,11 +519,6 @@ function handleCellClosed({ row, column }) {
         // 值没改变时，不需要进行修改
         if (oldValue.value !== row.taskDescription) {
             singleUpdateDescription(row);
-        }
-    } else if (column.property === 'planFinishHour') {
-        // 值没改变时，不需要进行修改
-        if (oldValue.value !== row.planFinishHour) {
-            singleUpdatePlanFinishHour(row);
         }
     } else if (column.property === 'planFinishDate') {
         // 值没改变时，不需要进行修改
@@ -680,20 +685,10 @@ async function singleUpdateDescription(row) {
 
 // 计划完成小时数单元格修改
 async function singleUpdatePlanFinishHour(row) {
-    // 验证小时数
-    const validateHoursInputResult = validateHoursInput(row.planFinishHour);
-    if (!validateHoursInputResult.isValid) {
-        ElMessage({
-            message: validateHoursInputResult.message,
-            type: 'error',
-        });
-        // 跟上面一致 todo 20230919
-        getEmployeeTasList();
-        return;
-    }
+    // console.log('项目ID已更改为:', row.planFinishHour);
+    // console.log('计划完成小时数row ===', row);
+    // 如果需要，你可以在这里调用其他函数或更新其他数据
     try {
-        // console.log('项目ID已更改为:', row.planFinishHour);
-        // 如果需要，你可以在这里调用其他函数或更新其他数据
         const response =
             await singleUpdatePlanFinishHourStore.fetchSUPlanFinishHourAction({
                 pPlanFinishHour: row.planFinishHour,
@@ -711,15 +706,11 @@ async function singleUpdatePlanFinishHour(row) {
                 type: 'error',
             });
         }
-        // 清除活动单元格的状态
-        // xTable.value.clearActived();
     } catch (error) {
-        console.log('error ===', error);
-        ElMessage({
-            message: '计划完成小时数修改失败',
-            type: 'error',
-        });
+        showFailMessage(error);
     }
+    // 清除活动单元格的状态
+    // xTable.value.clearActived();
 }
 
 // 计划完成日期单元格修改
@@ -1079,7 +1070,10 @@ const handleCopyLink = (id) => {
                     >
                         <template #default="{ row }">
                             <span>
-                                {{ projectNameMap[row.projectId] || '' }}
+                                {{
+                                    projectNameMap[row.projectId] ||
+                                    row.projectName
+                                }}
                             </span>
                         </template>
                         <template #edit="{ row }">
@@ -1108,7 +1102,9 @@ const handleCopyLink = (id) => {
                         align="left"
                     >
                         <template #default="{ row }">
-                            {{ taskTypeMap[row.taskTypeId] || '' }}
+                            {{
+                                row.taskTypeName || taskTypeMap[row.taskTypeId]
+                            }}
                         </template>
                         <template #edit="{ row }">
                             <vxe-select
@@ -1158,10 +1154,19 @@ const handleCopyLink = (id) => {
 
                         <!-- 单独编辑（todo-20231101） -->
                         <template #edit="{ row }">
-                            <vxe-input
+                            <vxe-select
                                 v-model="row.planFinishHour"
                                 type="text"
-                            ></vxe-input>
+                                transfer
+                                @change="singleUpdatePlanFinishHour(row)"
+                            >
+                                <vxe-option
+                                    v-for="planHour in planFinishHourList"
+                                    :key="planHour.id"
+                                    :label="planHour.taskPoints"
+                                    :value="planHour.taskPoints"
+                                ></vxe-option>
+                            </vxe-select>
                         </template>
                     </vxe-column>
                     <!-- 计划完成日期 -->
@@ -1204,7 +1209,10 @@ const handleCopyLink = (id) => {
                         align="center"
                     >
                         <template #default="{ row }">
-                            {{ auditUserMap[row.applyAuditId] || '' }}
+                            {{
+                                auditUserMap[row.applyAuditId] ||
+                                row.applyAuditName
+                            }}
                         </template>
                         <template #edit="{ row }">
                             <vxe-select
@@ -1404,7 +1412,7 @@ const handleCopyLink = (id) => {
 
         <!-- 确定删除提示框 -->
         <el-dialog v-model="showDeleteDialog" title="任务申请删除">
-            确定删除任务申请吗
+            确定是否删除任务申请
             <template #footer>
                 <span class="dialog-footer">
                     <el-button
@@ -1446,6 +1454,7 @@ const handleCopyLink = (id) => {
         <!-- </template> -->
         <!-- </van-nav-bar> -->
         <!-- 使用自己的 -->
+        <!-- <van-sticky> -->
         <div class="navbar">
             <div class="goback" @click="goBack">
                 <van-icon name="arrow-left" />
@@ -1455,8 +1464,9 @@ const handleCopyLink = (id) => {
                 <create-task></create-task>
             </div>
         </div>
+        <!-- </van-sticky> -->
 
-        <div class="noData" v-if="employeeTaskList.length == 0">
+        <div class="noData" v-if="employeeTaskList.length == 0 && isDataLoaded">
             暂时没有更多申请任务
         </div>
 
@@ -1507,6 +1517,8 @@ const handleCopyLink = (id) => {
                     </div>
                 </div>
 
+                <!-- <van-cell title="单元格" value="task.taskDescription" /> -->
+
                 <!-- 操作 -->
                 <div class="operate-box">
                     <div
@@ -1552,6 +1564,7 @@ const handleCopyLink = (id) => {
                     label="项目名称"
                     placeholder="请选择项目"
                     @click="showProjectPicker = true"
+                    label-width="100px"
                 ></van-field>
 
                 <!-- 任务类型 -->
@@ -1562,6 +1575,7 @@ const handleCopyLink = (id) => {
                     label="任务类型"
                     placeholder="请选择任务类型"
                     @click="showTaskTypePicker = true"
+                    label-width="100px"
                 ></van-field>
                 <!-- 审批人 -->
                 <van-field
@@ -1571,6 +1585,7 @@ const handleCopyLink = (id) => {
                     label="审批人"
                     placeholder="请选择审批人"
                     @click="showAuditPicker = true"
+                    label-width="100px"
                 ></van-field>
 
                 <!-- 计划完成小时数 -->
@@ -1581,6 +1596,7 @@ const handleCopyLink = (id) => {
                     v-model="vantForm.vanPlanHourName"
                     placeholder="请选择计划完成小时数"
                     @click="showPlanHourPicker = true"
+                    label-width="100px"
                 ></van-field>
 
                 <!-- 计划完成日期 -->
@@ -1627,6 +1643,7 @@ const handleCopyLink = (id) => {
                     label="任务说明"
                     v-model="form.taskDescription"
                     placeholder="请填写任务说明"
+                    label-width="100px"
                 ></van-field>
             </van-form>
         </van-dialog>
@@ -1878,11 +1895,16 @@ const handleCopyLink = (id) => {
 
 // taskCard-item的宽度控制
 .taskCard-item {
+    // width: 100%;
     min-width: 120px;
     color: #333;
 }
 .taskCard-content {
     color: #666;
+    width: 100%;
+    height: auto;
+    word-wrap: break-word;
+    word-break: break-all;
 }
 
 .mobile-description {

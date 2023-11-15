@@ -23,6 +23,7 @@ import { useUserIdStore } from '@/store/public';
 import debounce from 'lodash/debounce';
 // 设备检测
 import { isMobileDevice } from '@/utils/device/isMobile';
+import { showFailMessage } from '@/utils/show-message/showSFmessage';
 
 /********************************\
  * 公共引入处理
@@ -41,6 +42,9 @@ const form = reactive({
 });
 
 const loginFormRef = ref(null);
+//debounce中的第一个参数，传递的是他的引用，而不是返回值，所以不带括号
+// 我要的是函数，而不是函数值，所以loginbtn不用括号
+const debouncedLoginBtn = debounce(loginbtn, 600);
 async function loginbtn() {
     if (!form.account && !form.password) {
         ElMessage({
@@ -64,52 +68,57 @@ async function loginbtn() {
         return;
     }
 
-    // 发送登录请求
-    const response = await userLoginStore.fetchUserLoginAction(form);
-    // console.log('登录 response ===', response);
-    if (response.code === 200) {
-        // 存储 token 和 authorityList 到 localStorage
-        localStorage.setItem('token', response.result.token);
-        localStorage.setItem('username', form.account); // 存储用户名到本地
-        // 存储用户的id到store中
-        userIdStore.saveUserId(response.result.userId);
-        localStorage.setItem(
-            'authorityList',
-            JSON.stringify(response.result.authorityList),
-        );
+    try {
+        // 发送登录请求
+        const response = await userLoginStore.fetchUserLoginAction(form);
+        // console.log('登录 response ===', response);
+        if (response.code === 200) {
+            // 存储 token 和 authorityList 到 localStorage
+            localStorage.setItem('token', response.result.token);
+            localStorage.setItem('username', form.account); // 存储用户名到本地
+            // 存储用户的id到store中
+            userIdStore.saveUserId(response.result.userId);
+            localStorage.setItem(
+                'authorityList',
+                JSON.stringify(response.result.authorityList),
+            );
 
-        // 检查是否具有管理员权限
-        const hasAdminAuthority =
-            response.result.authorityList.includes('WEB_TaskApplyAudit');
+            // 检查是否具有管理员权限
+            const hasAdminAuthority =
+                response.result.authorityList.includes('WEB_TaskApplyAudit');
 
-        // 获取当前路由的taskId参数
-        const taskId = route.query.taskId;
+            // 获取当前路由的taskId参数
+            const taskId = route.query.taskId;
 
-        let path = {};
-        let query = {};
-        if (taskId) {
-            path = '/dashboard/approval';
-            query.taskId = taskId;
-        } else {
-            // 移动设备
-            if (isMobileDevice) {
-                path = '/mobileexplore';
+            let path = {};
+            let query = {};
+            if (taskId) {
+                path = '/dashboard/approval';
+                query.taskId = taskId;
             } else {
-                // pc设备
-                path = hasAdminAuthority
-                    ? '/dashboard/approval'
-                    : '/dashboard/apply';
+                // 移动设备
+                if (isMobileDevice) {
+                    path = '/mobileexplore';
+                } else {
+                    // pc设备
+                    path = hasAdminAuthority
+                        ? '/dashboard/approval'
+                        : '/dashboard/apply';
+                }
             }
-        }
 
-        // 重定向到指定路径，并保留所有查询参数
-        router.push({ path, query });
-    } else {
-        console.log('response.message ===', response.message);
-        ElMessage({
-            message: response.message,
-            type: 'error',
-        });
+            // 重定向到指定路径，并保留所有查询参数
+            router.push({ path, query });
+        } else {
+            console.log('response.message ===', response.message);
+            ElMessage({
+                message: response.message,
+                type: 'error',
+            });
+        }
+    } catch (error) {
+        console.log('error ===', error);
+        showFailMessage(error);
     }
 }
 
@@ -125,12 +134,6 @@ function showPwd() {
         passwordType.value === 'password' ? 'text' : 'password';
     isPwdShown.value = !isPwdShown.value;
 }
-
-/********************************\
- * 防抖处理
-\********************************/
-//debounce中的第一个参数，传递的是他的引用，而不是返回值，所以不带括号
-const debouncedLoginBtn = debounce(loginbtn, 600);
 </script>
 
 <template>

@@ -4,14 +4,16 @@ export const validateDateInput = (date, dateTime) => {
     if (date && !dateTime) {
         return {
             isValid: false,
-            message: '未选时间。日期和时间必须同时选择或者同时不选',
+            message:
+                '未选计划完成时间。计划完成日期和计划完成时间必须同时选择或者同时不选。',
         };
     }
     // 未选日期，已选时间
     if (!date && dateTime) {
         return {
             isValid: false,
-            message: '未选日期。日期和时间必须同时选择或者同时不选',
+            message:
+                '未选计划完成日期。计划完成日期和计划完成时间必须同时选择或者同时不选。',
         };
     }
 

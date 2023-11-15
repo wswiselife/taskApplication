@@ -18,8 +18,10 @@ import { showFailToast } from 'vant';
 /********************************\
  * 公共引入处理
 \********************************/
-onMounted(() => {
+const isDataLoaded = ref(false);
+onMounted(async () => {
     getURLList();
+    isDataLoaded.value = true;
 });
 
 const router = useRouter();
@@ -37,9 +39,9 @@ onMounted(() => {
 /********************************\
  * 获取urllist
 \********************************/
-function getURLList() {
+async function getURLList() {
     // await getURLListStore.fetchGetURLListAction();
-    getURLListStore.fetchGetURLListAction();
+    await getURLListStore.fetchGetURLListAction();
     // console.log('网站管理 urllist ===', urllist);
 }
 const getURLListStore = useGetURLListStore();
@@ -324,7 +326,7 @@ const handleUpdateBeforeClose = async (action) => {
 
         <!-- 修改弹出框 -->
         <el-dialog
-            title="网址修改"
+            title="网址管理修改"
             v-model="updateDialogVisible"
             modal="true"
             @close="closeUpdateDialog"
@@ -370,7 +372,7 @@ const handleUpdateBeforeClose = async (action) => {
         </el-dialog>
 
         <!-- 确定删除提示框 -->
-        <el-dialog v-model="deleteDialogVisible" title="网址删除">
+        <el-dialog v-model="deleteDialogVisible" title="网址管理删除">
             {{ `请确认是否删除说明为${deleteDescription}的网址？` }}
             <template #footer>
                 <span class="dialog-footer">
@@ -410,7 +412,7 @@ const handleUpdateBeforeClose = async (action) => {
             </div>
         </div>
 
-        <div class="noData" v-if="urllist.length == 0">
+        <div class="noData" v-if="urllist.length == 0 && isDataLoaded">
             暂时没有更多网站数据
         </div>
         <!-- main -->
@@ -430,7 +432,16 @@ const handleUpdateBeforeClose = async (action) => {
                 <!-- 网站地址： -->
                 <div class="mobile-url item-box">
                     <div class="taskCard-item">网址</div>
-                    <a :href="urlItem.url" target="_blank">{{ urlItem.url }}</a>
+                    <div class="taskCard-content taskDescription">
+                        <a
+                            :href="urlItem.url"
+                            target="_blank"
+                            style="display: block"
+                            class="taskCard-content"
+                        >
+                            {{ urlItem.url }}
+                        </a>
+                    </div>
                 </div>
                 <!-- 操作 -->
                 <div class="operate-box">
@@ -481,7 +492,7 @@ const handleUpdateBeforeClose = async (action) => {
         <!-- 删除弹出框 -->
         <van-dialog
             v-model:show="showMobileDeleteDialog"
-            title="删除网址"
+            title="网址管理删除"
             show-cancel-button
             @confirm="debounceDeleteURLFun"
             :close-on-click-overlay="true"
@@ -597,6 +608,10 @@ const handleUpdateBeforeClose = async (action) => {
     // width: 100%;
     background-color: #f3f7ff;
 }
+
+.taskDescription {
+    padding-bottom: 5px;
+}
 .navbar {
     display: flex;
     flex-direction: row;
@@ -645,6 +660,10 @@ const handleUpdateBeforeClose = async (action) => {
 
 .taskCard-content {
     color: #666;
+    width: 100%;
+    height: auto;
+    word-wrap: break-word;
+    word-break: break-all;
 }
 
 .mobile-url {

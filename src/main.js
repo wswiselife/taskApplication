@@ -33,6 +33,8 @@ import Vant from 'vant';
 import 'vant/lib/index.css';
 // showToast
 import { Toast } from 'vant';
+// Sticky
+import { Sticky } from 'vant';
 
 const app = createApp(App);
 
@@ -54,4 +56,5 @@ app.use(router)
     .use(useTable)
     .use(Vant)
     .use(Toast)
+    .use(Sticky)
     .mount('#app');

@@ -111,7 +111,7 @@ async function dialogFormVisibleFun() {
     response = await getPlanFinishList();
     if (!handleResponse(response)) return;
     planFinishHourList.value = response.result;
-    console.log('planFinishHourList ===', planFinishHourList);
+    // console.log('planFinishHourList ===', planFinishHourList);
 }
 
 async function getUserProjectList() {
@@ -135,6 +135,7 @@ function handleResponse(response) {
     if (response && response.code === 200) {
         return true;
     } else {
+        // console.log('response ===', response);
         showFailMessage(response.message);
         return false;
     }
@@ -151,7 +152,7 @@ async function createTaskBtn() {
     }
     // 任务类别
     if (!form.taskTypeId) {
-        showFailMessage('请选择任务类别');
+        showFailMessage('请选择任务类型');
         return;
     }
     // 审批人
@@ -632,6 +633,7 @@ const clearDate = () => {
                     label="项目名称"
                     placeholder="请选择项目"
                     @click="showProjectPicker = true"
+                    label-width="100px"
                 ></van-field>
                 <!-- 任务类型 -->
                 <van-field
@@ -641,6 +643,7 @@ const clearDate = () => {
                     label="任务类型"
                     placeholder="请选择任务类型"
                     @click="showTaskTypePicker = true"
+                    label-width="100px"
                 ></van-field>
                 <!-- 审批人 -->
                 <van-field
@@ -650,6 +653,7 @@ const clearDate = () => {
                     label="审批人"
                     placeholder="请选择审批人"
                     @click="showAuditPicker = true"
+                    label-width="100px"
                 ></van-field>
 
                 <!-- 计划完成小时数 -->
@@ -660,6 +664,7 @@ const clearDate = () => {
                     v-model="vantForm.vanPlanHourName"
                     placeholder="请选择计划完成小时数"
                     @click="showPlanHourPicker = true"
+                    label-width="100px"
                 ></van-field>
 
                 <!-- 计划完成日期 -->
@@ -705,6 +710,7 @@ const clearDate = () => {
                     label="任务说明"
                     v-model="form.taskDescription"
                     placeholder="请填写任务说明"
+                    label-width="100px"
                 ></van-field>
             </van-form>
         </van-dialog>

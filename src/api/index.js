@@ -7,7 +7,6 @@
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
 import axios from 'axios';
-
 //引入nprogress 进度条插件
 import NProgress from 'nprogress';
 // 路由跳转(.js文件不是这样跳转的)
@@ -23,24 +22,45 @@ const request = axios.create({
 // 请求拦截器
 request.interceptors.request.use(
     (config) => {
-        // 开启进度条
-        // console.log('Request interceptor called');
         NProgress.start();
         const token = localStorage.getItem('token');
-        // 为什么拦截401？token 过期问题
         if (token) {
             config.headers['Authorization'] = `Bearer ${token}`;
         }
         return config;
     },
     (error) => {
-        // 关闭进度条
         NProgress.done();
-        // 其他未知错误
-        showFailMessage(error);
+        // showFailMessage(error);
         return Promise.reject(error);
     },
 );
+
+request.interceptors.response.use(
+    (response) => {
+        NProgress.done();
+
+        if (response.status == 200) {
+            console.log('每次请求的response ===', response);
+            if (response.data.code == 200) {
+                return response.data;
+            } else if (response.data.code === 401) {
+                handle401Error();
+                return;
+            } else {
+                return response.data;
+            }
+        } else {
+            return response.data;
+        }
+    },
+    (error) => {
+        NProgress.done();
+        // console.log('axios的error ===', error);
+        return Promise.reject(error);
+    },
+);
+
 let is401MessageShown = false;
 let is401HandlingInProgress = false;
 
@@ -64,37 +84,4 @@ const handle401Error = () => {
         }, 3000); // 3秒后跳转
     }
 };
-
-request.interceptors.response.use(
-    (response) => {
-        // 关闭进度条
-        NProgress.done();
-        // console.log('response.data:', response);
-        if (response.status == 200) {
-            if (response.data.code == 200) {
-                return response.data;
-            } else if (response.data.code === 401) {
-                handle401Error();
-                return;
-            } else if (response.data.code >= 400 && response.data.code < 500) {
-                showFailMessage(response.data.message);
-                return Promise.reject(response.data.message);
-            } else {
-                // 其他未知错误
-                showFailMessage(response.data.message);
-                return Promise.reject(response.data.message);
-            }
-        } else {
-            // console.log('请求发送错误');
-            return Promise.reject(response.data.message);
-        }
-    },
-    (error) => {
-        // 关闭进度条
-        NProgress.done();
-        // showFailMessage(error);
-        return Promise.reject(error);
-    },
-);
-
 export { request };

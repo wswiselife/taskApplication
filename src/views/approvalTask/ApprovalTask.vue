@@ -10,8 +10,6 @@
 import {
     useAuditTaskStore,
     useAgreeTaskStore,
-    useUserProjectListStore,
-    useTaskTypeListStore,
     useDeleteTaskStore,
     usePlanFinishHourStore,
 } from '@/store/modules/task';
@@ -30,8 +28,7 @@ import { disabledPreviousDates } from '@/utils/limit/limitDateSelect';
 import { validateHoursInput } from '@/utils/validate/validateHoursInput';
 // 点数校验
 import { validatePoint } from '@/utils/validate/validatePoint';
-// 获取项目id
-import { useUserIdStore } from '@/store/public';
+
 // 导入时间&分钟选择
 // import HourAndMinSelect from '@/components/hour-min-select/HourAndMinSelect.vue';
 // 防抖处理
@@ -45,7 +42,10 @@ const router = useRouter();
 const route = useRoute();
 // 刷新按钮
 import Refresh from '@/components/approval-refresh/refresh.vue';
-import { showFailToast, showSuccessToast } from 'vant';
+import {
+    showFailMessage,
+    showSuccessMessage,
+} from '@/utils/show-message/showSFmessage';
 // 日期非选
 import { validateDateInput } from '@/utils/validate/validateDate';
 // 链接审批数据共享
@@ -61,23 +61,13 @@ onMounted(() => {
     if (storedAuthorityList) {
         authorityList.value = JSON.parse(storedAuthorityList);
     }
+    getAuditUserData();
+    isDataLoaded.value = true;
 });
 /********************************\
  * 公共引入处理
  \********************************/
-onMounted(() => {
-    getAuditUserData();
-    // 调用用户权限项目接口
-    getUserProjectList();
-    // 调用获取任务类型接口
-    getTaskTypeList();
-    // 选择时间获取
-    getPlanFinishList();
-});
-
-const userProjectList = useUserProjectListStore();
-const useTaskTypeList = useTaskTypeListStore();
-const userIdStore = useUserIdStore();
+const isDataLoaded = ref(false);
 const usePlanFinishHourList = usePlanFinishHourStore();
 // 假删除接口数据
 const deleteTask = useDeleteTaskStore();
@@ -88,54 +78,6 @@ const deleteTask = useDeleteTaskStore();
 
 // 链接审批数据共享
 const isLinkApprovalStore = useIsLinkApprovalStore();
-/********************************\
- * 获取用户有权限的项目
- \********************************/
-const projectList = ref([]);
-const projectNameMap = ref({}); // 记录映射关系
-async function getUserProjectList() {
-    // console.log('userIdStore.userId ===', userIdStore.userId);
-    const response = await userProjectList.fetchUserProjectListAction(
-        userIdStore.userId,
-    );
-    // console.log('项目idresponse ===', response);
-    if (response && response.code === 200) {
-        projectList.value = response.result;
-        // 根据 projectList 创建 projectNameMap
-        projectNameMap.value = response.result.reduce((map, project) => {
-            map[project.id] = project.name;
-            return map;
-        }, {});
-    } else {
-        // ElMessage({
-        //     message: response.message,
-        //     type: 'error',
-        // });
-    }
-}
-
-/********************************\
- * 获取任务类别ID
- \********************************/
-const taskTypeList = ref([]);
-const taskTypeMap = ref({});
-async function getTaskTypeList() {
-    const response = await useTaskTypeList.fetchTaskTypeListAction();
-    // console.log('任务类型response ===', response);
-    if (response && response.code === 200) {
-        taskTypeList.value = response.result;
-        // 根据 taskTypeList 创建 taskTypeMap
-        taskTypeMap.value = response.result.reduce((map, taskType) => {
-            map[taskType.id] = taskType.name;
-            return map;
-        }, {});
-    } else {
-        // ElMessage({
-        //     message: '获取任务类型失败',
-        //     type: 'error',
-        // });
-    }
-}
 
 /********************************\
  * 获取计划完成小时数
@@ -198,6 +140,8 @@ const showAgreeDialog = ref(false);
 // 选择的id
 const chooseAgreeId = ref(null);
 function showAgreeDialogFun(currentId) {
+    // 选择时间获取
+    getPlanFinishList();
     chooseAgreeId.value = currentId;
     form.chooseAgreeId = currentId;
     showAgreeDialog.value = true;
@@ -228,12 +172,15 @@ function resetForm() {
     form.point = '';
     // 网络导致的请求失败退出后,处理无法点击问题
     isSubmitting.value = false;
+    approvalLoading.value = false;
 }
 
 /********************************\
  * 确认同意
  \********************************/
+const approvalLoading = ref(false);
 async function agreeFun() {
+    // vant组件和ele组件差异处理
     if (isLinkApproval.value) {
         form.point = applyLinkForm.point;
         form.finishDate = applyLinkForm.finishDate;
@@ -246,32 +193,17 @@ async function agreeFun() {
     // 验证点数
     const validatePointInputResult = validatePoint(form.point);
     if (!validatePointInputResult.isValid) {
-        if (isMobileDevice) {
-            showFailToast(validatePointInputResult.message);
-        } else {
-            ElMessage({
-                message: validatePointInputResult.message,
-                type: 'error',
-            });
-        }
-
+        showFailMessage(validatePointInputResult.message);
         return;
     }
 
     // 日期时间校验
-    const validateDdteInputResult = validateDateInput(
+    const validateDateInputResult = validateDateInput(
         form.finishDate,
         form.finishDateTime,
     );
-    if (!validateDdteInputResult.isValid) {
-        if (isMobileDevice) {
-            showFailToast(validateDdteInputResult.message);
-        } else {
-            ElMessage({
-                message: validateDdteInputResult.message,
-                type: 'error',
-            });
-        }
+    if (!validateDateInputResult.isValid) {
+        showFailMessage(validateDateInputResult.message);
         return;
     }
 
@@ -288,15 +220,7 @@ async function agreeFun() {
     // 验证小时数
     const validateHoursInputResult = validateHoursInput(form.finishHour);
     if (!validateHoursInputResult.isValid) {
-        if (isMobileDevice) {
-            showFailToast(validateHoursInputResult.message);
-        } else {
-            ElMessage({
-                message: validateHoursInputResult.message,
-                type: 'error',
-            });
-        }
-
+        showFailMessage(validateHoursInputResult.message);
         return;
     }
 
@@ -306,40 +230,33 @@ async function agreeFun() {
         form.chooseAgreeId = linkApplyId;
     }
 
-    // console.log('审批的form ===', form);
-    // 获取审批接口
-    const response = await useAgreeTask.fetchAgreeTaskAction(form);
-    // console.log('审批成功后的 response ===', response);
-    if (response && response.code === 200) {
-        // 清除弹出框
-        showAgreeDialog.value = false;
-        showMobileApprovalDialog.value = false;
-        // 提示成功
+    // 遮罩层控制，禁止点击控制
+    approvalLoading.value = true;
 
-        ElMessage({
-            message: `任务审批成功，任务编号为${response.result.code}。`,
-            type: 'success',
-        });
+    const response = await useAgreeTask.fetchAgreeTaskAction(form);
+
+    if (response.code === 200) {
+        // 关闭遮罩层，取消加载效果
+        approvalLoading.value = false;
+        // 成功后可编辑,用于下次审批任务
+        isSubmitting.value = false;
+        // 提示成功
+        showSuccessMessage(`任务审批成功，任务编号为${response.result.code}。`);
         // 清空输入的点数
         resetForm();
+        // 关闭对话框
+        showAgreeDialog.value = false;
+        showMobileApprovalDialog.value = false;
         // 重新发送请求
         useAuditTaskList.fetchAuditTaskAction();
-        // 成功后可编辑,用于下次审批任务
-        isSubmitting.value = false;
     } else {
-        showAgreeDialog.value = false;
-
-        if (isMobileDevice) {
-            showFailToast(response.message);
-        } else {
-            ElMessage({
-                message: response.message,
-                type: 'error',
-            });
-        }
-
+        // 弹出框不关闭
+        showAgreeDialog.value = true;
         // 成功后可编辑,用于下次审批任务
         isSubmitting.value = false;
+        // 加载效果取消，按钮变为可点击
+        approvalLoading.value = false;
+        showFailMessage(response.message);
     }
 }
 /********************************\
@@ -412,7 +329,9 @@ const debounceDeleteTaskFun = debounce(deleteTaskFun, 600);
  \********************************/
 const pointRef = ref(null);
 const focusInput = () => {
-    pointRef.value.focus();
+    if (pointRef.value) {
+        pointRef.value.focus();
+    }
 };
 
 /********************************\
@@ -420,14 +339,7 @@ const focusInput = () => {
  \********************************/
 const refreshApplyList = () => {
     getAuditUserData();
-    if (isMobileDevice) {
-        showSuccessToast('任务审批数据已更新');
-    } else {
-        ElMessage({
-            message: '任务审批列表数据已更新',
-            type: 'success',
-        });
-    }
+    showSuccessMessage('任务审批列表数据已更新');
 };
 
 /********************************\
@@ -646,10 +558,10 @@ const vantForm = reactive({ vanPlanHourName: '' });
 
 // 单独审批补全
 onMounted(async () => {
-    // 获取所有的列表数据，找到其中应该审批的那个
-    await getAuditUserData();
-
     if (linkApplyId) {
+        // 获取所有的列表数据，找到其中应该审批的那个
+        await getAuditUserData();
+        getPlanFinishList();
         // 获取列表之后填充数据
         // showMobileApprovalDialogBtn(linkApplyId);
 
@@ -745,7 +657,7 @@ onMounted(async () => {
                     >
                         <template #default="{ row }">
                             <span>
-                                {{ projectNameMap[row.projectId] || '' }}
+                                {{ row.projectName }}
                             </span>
                         </template>
                         <template #edit="{ row }">
@@ -774,7 +686,7 @@ onMounted(async () => {
                         align="left"
                     >
                         <template #default="{ row }">
-                            {{ taskTypeMap[row.taskTypeId] || '' }}
+                            {{ row.taskTypeName }}
                         </template>
                         <template #edit="{ row }">
                             <vxe-select
@@ -791,6 +703,7 @@ onMounted(async () => {
                             </vxe-select>
                         </template>
                     </vxe-column>
+
                     <!-- 项目描述 -->
                     <vxe-column
                         field="taskDescription"
@@ -829,6 +742,7 @@ onMounted(async () => {
                             ></vxe-input>
                         </template>
                     </vxe-column>
+
                     <!-- 计划完成日期 -->
                     <vxe-column
                         field="planFinishDate"
@@ -848,6 +762,7 @@ onMounted(async () => {
                             ></vxe-input>
                         </template>
                     </vxe-column>
+
                     <!-- 申请人 -->
                     <vxe-column
                         field="employeeName"
@@ -893,7 +808,11 @@ onMounted(async () => {
             @close="resetForm"
             @opened="focusInput"
         >
-            <el-form :model="form" :disabled="isSubmitting">
+            <el-form
+                :model="form"
+                :disabled="isSubmitting"
+                v-loading="approvalLoading"
+            >
                 <el-form-item :label-width="40">
                     <el-col :span="8">
                         项目名称：{{ onlyShow.projectName }}
@@ -969,7 +888,6 @@ onMounted(async () => {
                     ></el-input>
                 </el-form-item>
             </el-form>
-
             <template #footer>
                 <span class="dialog-footer">
                     <el-button
@@ -982,6 +900,7 @@ onMounted(async () => {
                         type="primary"
                         @click="debounceAgreeFun"
                         class="btn-sure"
+                        :disabled="approvalLoading"
                     >
                         同意
                     </el-button>
@@ -1034,7 +953,7 @@ onMounted(async () => {
             </div>
         </div>
 
-        <div class="noData" v-if="auditTaskList.length == 0">
+        <div class="noData" v-if="auditTaskList.length == 0 && isDataLoaded">
             暂时没有更多审批任务
         </div>
 
@@ -1118,16 +1037,19 @@ onMounted(async () => {
                 <van-cell
                     :value="onlyShow.projectName"
                     title="项目名称"
+                    label-width="100px"
                 ></van-cell>
                 <!-- 任务类型 -->
                 <van-cell
                     :value="onlyShow.taskTypeName"
                     title="任务类型"
+                    label-width="100px"
                 ></van-cell>
                 <!-- 申请人 -->
                 <van-cell
                     :value="onlyShow.employeeName"
                     title="申请人"
+                    label-width="100px"
                 ></van-cell>
 
                 <!-- 计划完成时间 -->
@@ -1136,6 +1058,7 @@ onMounted(async () => {
                     v-model="form.point"
                     placeholder="请输入任务点数"
                     ref="pointRef"
+                    label-width="100px"
                 ></van-field>
 
                 <!-- 计划完成小时数 -->
@@ -1146,6 +1069,7 @@ onMounted(async () => {
                     v-model="vantForm.vanPlanHourName"
                     placeholder="请选择计划完成小时数"
                     @click="showPlanHourPicker = true"
+                    label-width="100px"
                 ></van-field>
 
                 <!-- 计划完成日期 -->
@@ -1191,6 +1115,7 @@ onMounted(async () => {
                     label="任务说明"
                     v-model="form.taskDescription"
                     placeholder="请输入任务说明"
+                    label-width="100px"
                 ></van-field>
             </van-form>
         </van-dialog>
@@ -1241,15 +1166,30 @@ onMounted(async () => {
                 <div class="link-pc-container">
                     <div class="title">任务申请审批</div>
                 </div>
-                <el-form-item label="项目名称" prop="" :label-width="120">
+                <el-form-item
+                    label="项目名称"
+                    prop=""
+                    :label-width="120"
+                    class="nolyShow"
+                >
                     <div class="onlyShowItem">
                         {{ onlyShow.projectName }}
                     </div>
                 </el-form-item>
-                <el-form-item label="任务类型" prop="" :label-width="120">
+                <el-form-item
+                    label="任务类型"
+                    prop=""
+                    :label-width="120"
+                    class="nolyShow"
+                >
                     <div class="onlyShowItem">{{ onlyShow.taskTypeName }}</div>
                 </el-form-item>
-                <el-form-item label="申请人" prop="" :label-width="120">
+                <el-form-item
+                    label="申请人"
+                    prop=""
+                    :label-width="120"
+                    class="nolyShow"
+                >
                     <div class="onlyShowItem">{{ onlyShow.employeeName }}</div>
                 </el-form-item>
 
@@ -1328,7 +1268,10 @@ onMounted(async () => {
     </div>
 
     <!-- 链接-移动端审批 -->
-    <div class="link-mobile-approval" v-if="isLinkApproval && isMobileDevice">
+    <div
+        class="link-mobile-approval"
+        v-if="isLinkApproval && isMobileDevice && !noPermission"
+    >
         <!-- navbar -->
         <div class="link-mobile-container">
             <div class="title">任务申请审批</div>
@@ -1358,6 +1301,7 @@ onMounted(async () => {
                     v-model="applyLinkForm.point"
                     placeholder="请输入任务点数"
                     ref="pointRef"
+                    label-width="100px"
                 ></van-field>
 
                 <!-- 计划完成时间 -->
@@ -1368,6 +1312,7 @@ onMounted(async () => {
                     v-model="vantForm.vanPlanHourName"
                     placeholder="请选择计划完成小时数"
                     @click="showPlanHourPicker = true"
+                    label-width="100px"
                 ></van-field>
 
                 <!-- 计划完成日期 -->
@@ -1417,6 +1362,7 @@ onMounted(async () => {
                     label="任务说明"
                     v-model="applyLinkForm.taskDescription"
                     placeholder="请输入任务说明"
+                    label-width="100px"
                 ></van-field>
             </van-form>
         </div>
@@ -1450,6 +1396,7 @@ onMounted(async () => {
         </van-popup>
     </div>
 
+    <!-- 无审批权限页面 -->
     <div class="nopermission" v-if="noPermission">
         当前你没有该任务申请的审批权限
     </div>
@@ -1627,10 +1574,16 @@ onMounted(async () => {
 
 .onlyShowItem {
     color: #666666;
-    padding-left: 50px;
+    // margin-right: auto;
+    width: 100%;
+    margin-right: 10px;
+    text-align: right;
+    // padding-left: 450px;
+    // margin-right: 50px;
 }
 
 .el-form-item__content {
+    display: flex;
     justify-content: flex-end;
 }
 </style>
@@ -1690,6 +1643,10 @@ onMounted(async () => {
 
 .taskCard-content {
     color: #666;
+    width: 100%;
+    height: auto;
+    word-wrap: break-word;
+    word-break: break-all;
 }
 
 .mobile-description {
