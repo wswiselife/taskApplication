@@ -50,13 +50,8 @@ function resetForm() {
 }
 
 async function createURLBtn() {
-    if (!form.url) {
-        showFailMessage('网站地址不能为空。');
-        return;
-    }
-
     if (!form.description) {
-        showFailMessage('网站说明不能为空。');
+        showFailMessage('网址说明不能为空。');
         return;
     }
 
@@ -85,7 +80,9 @@ async function createURLBtn() {
         isSubmitting.value = false;
     } else {
         showMobileCreateDialog.value = false;
-        showFailMessage(response.message);
+        showFailMessage(
+            `说明为${form.description}的网址修改失败，${response.message}`,
+        );
         // 成功后关闭禁止编辑表单
         isSubmitting.value = false;
     }

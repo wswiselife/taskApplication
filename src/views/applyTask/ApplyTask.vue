@@ -422,7 +422,7 @@ async function updateTaskFun() {
             // 移动端弹出框
 
             // 提示新建完成
-            showSuccessMessage('任务修改成功');
+            showSuccessMessage(`任务申请修改成功。`);
 
             getEmployeeTasList(); // 重新获取数据
             dialogFormVisible.value = false;
@@ -430,14 +430,14 @@ async function updateTaskFun() {
             // 成功后关闭禁止编辑表单
             isSubmitting.value = false;
         } else {
-            showFailMessage(response.message);
+            showFailMessage(`任务申请修改失败，${response.message}`);
             isSubmitting.value = false;
         }
     } catch (error) {
         console.log('error ===', error);
         // 取消弹出框
         dialogFormVisible.value = false;
-        showFailMessage(`任务修改失败。${error}`);
+        showFailMessage(`任务申请修改失败，${error}`);
     }
 }
 /********************************\
@@ -474,10 +474,10 @@ async function deleteTaskFun() {
         // 清除对话框
         showDeleteDialog.value = false;
         // 提示新建完成
-        showSuccessMessage('任务删除成功');
+        showSuccessMessage('任务申请删除成功。');
         getEmployeeTasList(); // 重新获取数据
     } else {
-        showFailMessage(response.message);
+        showFailMessage(`任务申请删除失败，${response.message}`);
     }
 }
 
@@ -1412,7 +1412,7 @@ const handleCopyLink = (id) => {
 
         <!-- 确定删除提示框 -->
         <el-dialog v-model="showDeleteDialog" title="任务申请删除">
-            确定是否删除任务申请
+            请确定是否删除任务申请？
             <template #footer>
                 <span class="dialog-footer">
                     <el-button

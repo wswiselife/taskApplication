@@ -77,7 +77,9 @@ const urllistClickBtn = () => {
 
 <style scoped lang="scss">
 .explore_container {
-    height: 100%;
+    height: 100vh;
+    width: auto;
+    overflow-y: hidden;
 }
 
 .menu-container {
@@ -88,7 +90,7 @@ const urllistClickBtn = () => {
 
     background-color: #f3f7ff;
     // background-color: green;
-    height: 75%;
+    height: 75vh;
     padding-top: 15px;
 
     .menu {

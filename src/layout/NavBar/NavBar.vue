@@ -41,7 +41,7 @@ async function logoutbtn() {
     clearCacheFun();
 
     ElMessage({
-        message: '已正常退出',
+        message: '已正常退出。',
         type: 'success',
     });
 

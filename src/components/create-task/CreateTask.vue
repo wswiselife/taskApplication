@@ -147,23 +147,23 @@ async function createTaskBtn() {
     // console.log('form ===', form);
     // 项目id
     if (!form.projectId) {
-        showFailMessage('请选择项目');
+        showFailMessage('请选择项目名称。');
         return;
     }
     // 任务类别
     if (!form.taskTypeId) {
-        showFailMessage('请选择任务类型');
+        showFailMessage('请选择任务类型。');
         return;
     }
     // 审批人
     if (!form.applyAuditId) {
-        showFailMessage('请选择审批人');
+        showFailMessage('请选择审批人。');
         return;
     }
 
     // validateHoursInput 验证计划完成小时数(20231101改为下拉框),只需要验证是否为空
     if (!form.planFinishHour) {
-        showFailMessage('请选择计划完成小时数');
+        showFailMessage('请选择计划完成小时数。');
         return;
     }
 
@@ -235,7 +235,7 @@ async function createTaskBtn() {
         isCreateStore.setIsCreated(true);
         // 提示新建完成
 
-        showSuccessMessage('任务新增成功');
+        showSuccessMessage('任务申请新增成功。');
         // 清除所有数据
         resetForm();
         // 清除移动端数据
@@ -248,7 +248,7 @@ async function createTaskBtn() {
         showMobileCreateDialog.value = false;
     } else {
         // 可以添加其他的错误处理逻辑
-        showFailMessage(response.message);
+        showFailMessage(`任务申请新增失败，${response.message}`);
         // 设置打开可编辑
         isSubmitting.value = false;
     }
@@ -457,7 +457,7 @@ const clearDate = () => {
                     :label-width="formLabelWidth"
                 >
                     <el-select
-                        placeholder="请选择项目"
+                        placeholder="请选择项目名称"
                         v-model="form.projectId"
                     >
                         <el-option
@@ -631,7 +631,7 @@ const clearDate = () => {
                     readonly
                     v-model="vantForm.vantProjectName"
                     label="项目名称"
-                    placeholder="请选择项目"
+                    placeholder="请选择项目名称"
                     @click="showProjectPicker = true"
                     label-width="100px"
                 ></van-field>

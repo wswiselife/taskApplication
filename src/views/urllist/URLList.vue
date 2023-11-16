@@ -13,7 +13,7 @@ import { useRouter } from 'vue-router';
 import debounce from 'lodash/debounce';
 // 设备检测
 import { isMobileDevice } from '@/utils/device/isMobile';
-import { showFailToast } from 'vant';
+import { showFailMessage } from '@/utils/show-message/showSFmessage';
 
 /********************************\
  * 公共引入处理
@@ -93,26 +93,12 @@ const form = reactive({
 const updateURLListStore = useUpdateURLListStore();
 const updateURLFun = async () => {
     if (!form.description) {
-        if (isMobileDevice) {
-            showFailToast('网站说明不能为空');
-        } else {
-            ElMessage({
-                message: '网站说明不能为空',
-                type: 'error',
-            });
-        }
+        showFailMessage('网址说明不能为空。');
         return;
     }
 
     if (!form.url) {
-        if (isMobileDevice) {
-            showFailToast('网站地址不能为空');
-        } else {
-            ElMessage({
-                message: '网站地址不能为空',
-                type: 'error',
-            });
-        }
+        showFailMessage('网址不能为空。');
         return;
     }
 
@@ -125,10 +111,7 @@ const updateURLFun = async () => {
     // console.log('update response ===', response);
 
     if (response && response.code === 200) {
-        ElMessage({
-            type: 'success',
-            message: `说明为${form.description}的网址修改成功。`,
-        });
+        showSuccessMessage(`说明为${form.description}的网址修改成功。`);
         // 重新渲染列表
         getURLList();
         updateDialogVisible.value = false;
@@ -139,10 +122,9 @@ const updateURLFun = async () => {
         showMobileUpdataDialog.value = false;
         // 成功后关闭禁止编辑表单
         isSubmitting.value = false;
-        ElMessage({
-            type: 'error',
-            message: response.message,
-        });
+        showFailMessage(
+            `说明为${form.description}的网址修改失败，${response.message}`,
+        );
     }
 };
 /********************************\
@@ -179,12 +161,15 @@ const deleteURLFun = async () => {
         if (response && response.code === 200) {
             ElMessage({
                 type: 'success',
-                message: `说明为${deleteDescription.value}的网址删除成功`,
+                message: `说明为${deleteDescription.value}的网址删除成功。`,
             });
             getURLList();
             deleteDialogVisible.value = false;
         }
     } catch (error) {
+        showFailMessage(
+            `说明为${deleteDescription.value}的网址删除失败，${error}`,
+        );
         console.log('error ===', error);
     }
 };

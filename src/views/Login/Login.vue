@@ -48,21 +48,21 @@ const debouncedLoginBtn = debounce(loginbtn, 600);
 async function loginbtn() {
     if (!form.account && !form.password) {
         ElMessage({
-            message: '账号和密码不能为空',
+            message: '账号和密码不能为空。',
             type: 'error',
         });
         return;
     }
     if (!form.account) {
         ElMessage({
-            message: '账号不能为空',
+            message: '账号不能为空。',
             type: 'error',
         });
         return;
     }
     if (!form.password) {
         ElMessage({
-            message: '密码不能为空',
+            message: '密码不能为空。',
             type: 'error',
         });
         return;

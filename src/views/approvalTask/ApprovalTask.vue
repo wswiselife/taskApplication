@@ -256,7 +256,7 @@ async function agreeFun() {
         isSubmitting.value = false;
         // 加载效果取消，按钮变为可点击
         approvalLoading.value = false;
-        showFailMessage(response.message);
+        showFailMessage(`任务审批失败，${response.message}`);
     }
 }
 /********************************\
@@ -307,17 +307,11 @@ async function deleteTaskFun() {
         // 清除对话框
         showDeleteDialog.value = false;
         // 提示新建完成
-        ElMessage({
-            message: '任务删除成功',
-            type: 'success',
-        });
+        showSuccessMessage('任务申请删除成功。');
         // 重新获取数据
         getAuditUserData();
     } else {
-        ElMessage({
-            message: response.message,
-            type: 'error',
-        });
+        showFailMessage(`任务申请删除失败，${response.message}`);
     }
 }
 /********************************\
@@ -486,18 +480,12 @@ async function mobileDeleteTaskFun() {
         // 清除对话框
         showMobileDeleteDialog.value = false;
         // 提示新建完成
-        ElMessage({
-            message: '任务删除成功',
-            type: 'success',
-        });
+        showSuccessMessage('任务申请删除成功。');
         getAuditUserData(); // 重新获取数据
     } else {
         // 可以添加其他的错误处理逻辑
         // console.log('出错了');
-        ElMessage({
-            message: response.message,
-            type: 'error',
-        });
+        showFailMessage(`任务申请删除失败，${response.message}`);
     }
 }
 
@@ -910,7 +898,7 @@ onMounted(async () => {
 
         <!-- 确定删除提示框 -->
         <el-dialog v-model="showDeleteDialog" title="任务申请删除">
-            请确认是否删除任务申请
+            请确认是否删除任务申请？
             <template #footer>
                 <span class="dialog-footer">
                     <el-button

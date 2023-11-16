@@ -41,7 +41,7 @@ request.interceptors.response.use(
         NProgress.done();
 
         if (response.status == 200) {
-            console.log('每次请求的response ===', response);
+            // console.log('每次请求的response ===', response);
             if (response.data.code == 200) {
                 return response.data;
             } else if (response.data.code === 401) {
@@ -71,7 +71,7 @@ const handle401Error = () => {
         // 清除缓存
         clearCacheFun();
         if (!is401MessageShown) {
-            showFailMessage('验证身份失败，三秒后即将跳转登录页');
+            showFailMessage('验证身份失败，三秒后即将跳转登录页。');
 
             is401MessageShown = true;
             setTimeout(() => {
