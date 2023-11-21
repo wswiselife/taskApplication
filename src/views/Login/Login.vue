@@ -118,7 +118,7 @@ async function loginbtn() {
         }
     } catch (error) {
         console.log('error ===', error);
-        showFailMessage(error);
+        showFailMessage(`登录失败，${error}`);
     }
 }
 

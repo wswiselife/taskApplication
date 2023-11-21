@@ -15,7 +15,7 @@ import {
 } from '@/store/modules/task';
 import { storeToRefs } from 'pinia';
 import { ref, reactive, onMounted, computed } from 'vue';
-import { ElMessage } from 'element-plus';
+// import { ElMessage } from 'element-plus';
 import {
     getFormattedDate,
     getFormattedDateTwo,
@@ -247,6 +247,15 @@ async function agreeFun() {
         // 关闭对话框
         showAgreeDialog.value = false;
         showMobileApprovalDialog.value = false;
+        // 如果是单独审批
+        if (isLinkApproval.value) {
+            // 移动端单独审批
+            if (isMobileDevice) {
+                router.replace({ path: '/mobileexplore' });
+            } else {
+                router.replace({ path: '/dashboard/approval' });
+            }
+        }
         // 重新发送请求
         useAuditTaskList.fetchAuditTaskAction();
     } else {
@@ -890,14 +899,14 @@ onMounted(async () => {
                         class="btn-sure"
                         :disabled="approvalLoading"
                     >
-                        同意
+                        同意审批
                     </el-button>
                 </span>
             </template>
         </el-dialog>
 
         <!-- 确定删除提示框 -->
-        <el-dialog v-model="showDeleteDialog" title="任务申请删除">
+        <el-dialog v-model="showDeleteDialog" title="删除确认">
             请确认是否删除任务申请？
             <template #footer>
                 <span class="dialog-footer">
@@ -942,7 +951,7 @@ onMounted(async () => {
         </div>
 
         <div class="noData" v-if="auditTaskList.length == 0 && isDataLoaded">
-            暂时没有更多审批任务
+            没有任务审批数据。
         </div>
 
         <!-- 移动端展示 -->
@@ -1019,6 +1028,7 @@ onMounted(async () => {
             :close-on-click-overlay="true"
             @opened="focusInput"
             @cancel="resetForm"
+            confirmButtonText="同意审批"
         >
             <van-form :disabled="isSubmitting">
                 <!-- 项目名称 -->
@@ -1101,6 +1111,9 @@ onMounted(async () => {
                 <!-- 任务描述 -->
                 <van-field
                     label="任务说明"
+                    type="textarea"
+                    rows="1"
+                    autosize
                     v-model="form.taskDescription"
                     placeholder="请输入任务说明"
                     label-width="100px"
@@ -1135,12 +1148,12 @@ onMounted(async () => {
         <!-- 删除弹出框 -->
         <van-dialog
             v-model:show="showMobileDeleteDialog"
-            title="任务申请"
+            title="删除确认"
             show-cancel-button
             @confirm="mobileDeleteTaskFun"
             :close-on-click-overlay="true"
         >
-            <div class="delete-content">请确认是否删除任务申请。</div>
+            <div class="delete-content">请确认是否删除任务申请？</div>
         </van-dialog>
     </div>
 
@@ -1250,7 +1263,7 @@ onMounted(async () => {
 
             <div class="pclinkapply">
                 <div class="pc-cencel" @click="resetForm">取消</div>
-                <div class="pc-sure" @click="debounceAgreeFun">同意</div>
+                <div class="pc-sure" @click="debounceAgreeFun">同意审批</div>
             </div>
         </div>
     </div>
@@ -1348,6 +1361,9 @@ onMounted(async () => {
                 <!-- 任务描述 -->
                 <van-field
                     label="任务说明"
+                    type="textarea"
+                    rows="1"
+                    autosize
                     v-model="applyLinkForm.taskDescription"
                     placeholder="请输入任务说明"
                     label-width="100px"
@@ -1357,7 +1373,7 @@ onMounted(async () => {
 
         <div class="linkapply-opreate">
             <div class="link-cencel" @click="resetForm">取消</div>
-            <div class="link-sure" @click="debounceAgreeFun">同意</div>
+            <div class="link-sure" @click="debounceAgreeFun">同意审批</div>
         </div>
 
         <van-popup v-model:show="showPlanHourPicker" round position="bottom">
@@ -1386,7 +1402,7 @@ onMounted(async () => {
 
     <!-- 无审批权限页面 -->
     <div class="nopermission" v-if="noPermission">
-        当前你没有该任务申请的审批权限
+        当前你没有该任务申请的审批权限。
     </div>
 </template>
 
@@ -1687,9 +1703,11 @@ onMounted(async () => {
     justify-content: center;
 }
 
-.link-cencel,
-.link-sure {
+.link-cencel {
     padding: 15px 50px;
+}
+.link-sure {
+    padding: 15px 33px;
 }
 
 .link-cencel {

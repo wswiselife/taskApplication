@@ -59,7 +59,7 @@ const validatePoint = (PointInput) => {
     if (!/^(0(\.\d)?|[1-9]\d*(\.\d)?)$/.test(inputStr)) {
         return {
             isValid: false,
-            message: `${inputStr}的格式错误,请输入有效的数字。`,
+            message: `任务点数校验失败，${inputStr}的格式错误,请输入有效的数字。`,
         };
     }
 

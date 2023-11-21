@@ -707,6 +707,9 @@ const clearDate = () => {
 
                 <!-- 任务描述 -->
                 <van-field
+                    type="textarea"
+                    rows="1"
+                    autosize
                     label="任务说明"
                     v-model="form.taskDescription"
                     placeholder="请填写任务说明"

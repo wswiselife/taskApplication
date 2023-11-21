@@ -1,81 +1,40 @@
-// 导入提示语句
+// 确保已经导入 ClipboardJS
+import ClipboardJS from 'clipboard';
+import {
+    showFailMessage,
+    showSuccessMessage,
+} from '../show-message/showSFmessage';
 
-import { ElMessage } from 'element-plus';
-import { showFailToast, showSuccessToast } from 'vant';
-import { isMobileDevice } from '../device/isMobile';
-
-export const copyLink = (id) => {
-    const protocol = window.location.protocol; // 获取协议，例如 'http:'
-    const host = window.location.host; // 获取域名和端口，例如 'localhost:5173'
-    const link = `${protocol}//${host}/#/?taskId=${id}`;
-    copyTextToClipboard(link);
+// 生成链接
+const generateLink = (id) => {
+    const protocol = window.location.protocol;
+    const host = window.location.host;
+    return `${protocol}//${host}/#/?taskId=${id}`;
 };
 
-const copyTextToClipboard = (text) => {
-    if (!navigator.clipboard) {
-        // 如果浏览器不支持Clipboard API，可以使用document.execCommand('copy')作为备选方案
-        fallbackCopyTextToClipboard(text);
-        return;
-    }
-    navigator.clipboard.writeText(text).then(
-        () => {
-            if (isMobileDevice) {
-                showSuccessToast(`链接已成功复制到剪切板。链接为${text}`);
-            } else {
-                ElMessage({
-                    message: `链接已成功复制到剪切板。链接为${text}`,
-                    type: 'success',
-                });
-            }
-        },
-        (err) => {
-            if (isMobileDevice) {
-                showFailToast(`链接复制失败。${err}`);
-            } else {
-                ElMessage({
-                    message: `链接复制失败。${err}`,
-                    type: 'error',
-                });
-            }
-        },
-    );
-};
+export const copyLinkToClipboard = (id) => {
+    const link = generateLink(id);
 
-const fallbackCopyTextToClipboard = (text) => {
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
+    // 创建一个临时的按钮用于复制操作
+    const tempButton = document.createElement('button');
+    tempButton.setAttribute('data-clipboard-text', link);
+    document.body.appendChild(tempButton);
 
-    // 避免滚动到页面底部
-    textArea.style.top = '0';
-    textArea.style.left = '0';
-    textArea.style.position = 'fixed';
+    // 使用 clipboard.js 复制链接
+    const clipboard = new ClipboardJS(tempButton);
+    clipboard.on('success', function (e) {
+        showSuccessMessage(`链接已成功复制到剪切板，链接为${link}`);
+        e.clearSelection();
+        clipboard.destroy();
+        document.body.removeChild(tempButton);
+    });
 
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
+    clipboard.on('error', function () {
+        showFailMessage('链接复制失败。');
+        clipboard.destroy();
+        document.body.removeChild(tempButton);
+    });
 
-    try {
-        const successful = document.execCommand('copy');
-        if (successful) {
-            if (isMobileDevice) {
-                showSuccessToast(`链接已成功复制到剪切板。链接为${text}`);
-            } else {
-                ElMessage({
-                    message: `链接已成功复制到剪切板。链接为${text}`,
-                    type: 'success',
-                });
-            }
-        }
-    } catch (err) {
-        if (isMobileDevice) {
-            showFailToast(`链接复制失败。${err}`);
-        } else {
-            ElMessage({
-                message: `链接复制失败。${err}`,
-                type: 'error',
-            });
-        }
-    }
-
-    document.body.removeChild(textArea);
+    // 触发复制操作
+    tempButton.click();
 };

@@ -79,7 +79,7 @@ import { showFailToast } from 'vant';
 // 日期非选
 import { validateDateInput } from '@/utils/validate/validateDate';
 // 复制链接
-import { copyLink } from '@/utils/copy-link/copy-link.js';
+import { copyLinkToClipboard } from '@/utils/copy-link/copy-link.js';
 import {
     showFailMessage,
     showSuccessMessage,
@@ -1025,7 +1025,7 @@ const clearDate = () => {
 \********************************/
 
 const handleCopyLink = (id) => {
-    copyLink(id);
+    copyLinkToClipboard(id);
 };
 </script>
 
@@ -1411,7 +1411,7 @@ const handleCopyLink = (id) => {
         </el-dialog>
 
         <!-- 确定删除提示框 -->
-        <el-dialog v-model="showDeleteDialog" title="任务申请删除">
+        <el-dialog v-model="showDeleteDialog" title="删除确认">
             请确定是否删除任务申请？
             <template #footer>
                 <span class="dialog-footer">
@@ -1467,7 +1467,7 @@ const handleCopyLink = (id) => {
         <!-- </van-sticky> -->
 
         <div class="noData" v-if="employeeTaskList.length == 0 && isDataLoaded">
-            暂时没有更多申请任务
+            没有任务申请数据。
         </div>
 
         <!-- main -->
@@ -1641,6 +1641,9 @@ const handleCopyLink = (id) => {
                 <!-- 任务描述 -->
                 <van-field
                     label="任务说明"
+                    type="textarea"
+                    rows="1"
+                    autosize
                     v-model="form.taskDescription"
                     placeholder="请填写任务说明"
                     label-width="100px"
@@ -1706,12 +1709,12 @@ const handleCopyLink = (id) => {
         <!-- 删除弹出框 -->
         <van-dialog
             v-model:show="showMobileDeleteDialog"
-            title="任务申请删除"
+            title="删除确认"
             show-cancel-button
             @confirm="mobileDeleteTaskFun"
             :close-on-click-overlay="true"
         >
-            <div class="delete-content">请确认是否删除任务申请。</div>
+            <div class="delete-content">请确认是否删除任务申请？</div>
         </van-dialog>
     </div>
 </template>

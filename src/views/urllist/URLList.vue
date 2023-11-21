@@ -13,7 +13,10 @@ import { useRouter } from 'vue-router';
 import debounce from 'lodash/debounce';
 // 设备检测
 import { isMobileDevice } from '@/utils/device/isMobile';
-import { showFailMessage } from '@/utils/show-message/showSFmessage';
+import {
+    showFailMessage,
+    showSuccessMessage,
+} from '@/utils/show-message/showSFmessage';
 
 /********************************\
  * 公共引入处理
@@ -398,7 +401,7 @@ const handleUpdateBeforeClose = async (action) => {
         </div>
 
         <div class="noData" v-if="urllist.length == 0 && isDataLoaded">
-            暂时没有更多网站数据
+            没有网站管理数据。
         </div>
         <!-- main -->
         <div class="mobile-content">
