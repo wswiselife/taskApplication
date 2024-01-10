@@ -9,7 +9,7 @@ import {
 const generateLink = (id) => {
     const protocol = window.location.protocol;
     const host = window.location.host;
-    return `${protocol}//${host}/#/?taskId=${id}`;
+    return `${protocol}//${host}/#/?taskApplyId=${id}`;
 };
 
 export const copyLinkToClipboard = (id) => {

@@ -20,15 +20,15 @@ onMounted(() => {
 const router = useRouter();
 
 const applyClickBtn = () => {
-    router.push({ path: '/dashboard/apply' });
+    router.replace({ path: '/dashboard/apply' });
 };
 
 const approvalClickBtn = () => {
-    router.push({ path: '/dashboard/approval' });
+    router.replace({ path: '/dashboard/approval' });
 };
 
 const urllistClickBtn = () => {
-    router.push({ path: '/dashboard/urllist' });
+    router.replace({ path: '/dashboard/urllist' });
 };
 </script>
 

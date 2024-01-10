@@ -24,7 +24,7 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue';
 // pinia
 import { pinia } from './store';
 // 引入进度条样式（暂停）
-import 'nprogress/nprogress.css';
+// import 'nprogress/nprogress.css';
 // 引入vxe-table
 import VXETable from 'vxe-table';
 import 'vxe-table/lib/style.css';

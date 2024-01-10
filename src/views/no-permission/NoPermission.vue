@@ -5,7 +5,7 @@
 </script>
 
 <template>
-    <div class="nopermission_container">你当前没有审批权限</div>
+    <div class="nopermission_container">你当前没有审批权限。</div>
 </template>
 
 <style scoped lang="scss">

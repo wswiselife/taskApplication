@@ -76,9 +76,8 @@ export const deleteTaskData = (data) => {
 /********************************\
  * (审批人)同意申请
 \********************************/
-
 export const agreeTaskData = (data) => {
-    // console.log('data ===', data);
+    // console.log('api层的同意审批data ===', data);
     return request.post('/jsy/TaskApply/TaskApplyAudit', {
         taskApplyId: data.chooseAgreeId,
         taskPoints: data.point,
@@ -93,4 +92,13 @@ export const agreeTaskData = (data) => {
 \********************************/
 export const getPlanFinishHourData = () => {
     return request.get('/jsy/TaskPoint/GetTaskPointList');
+};
+
+/********************************\
+ * 根据任务申请id获取审批内容或结果
+\********************************/
+export const getTaskApplyById = (taskId) => {
+    return request.get(
+        `/jsy/TaskApply/GetTaskApplyById?pTaskApplyId=${taskId}`,
+    );
 };

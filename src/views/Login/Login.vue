@@ -74,8 +74,10 @@ async function loginbtn() {
         // console.log('登录 response ===', response);
         if (response.code === 200) {
             // 存储 token 和 authorityList 到 localStorage
+            // console.log('登录response ===', response);
             localStorage.setItem('token', response.result.token);
             localStorage.setItem('username', form.account); // 存储用户名到本地
+            localStorage.setItem('chineseName', response.result.nameCN);
             // 存储用户的id到store中
             userIdStore.saveUserId(response.result.userId);
             localStorage.setItem(
@@ -88,13 +90,13 @@ async function loginbtn() {
                 response.result.authorityList.includes('WEB_TaskApplyAudit');
 
             // 获取当前路由的taskId参数
-            const taskId = route.query.taskId;
+            const taskApplyId = route.query.taskApplyId;
 
             let path = {};
             let query = {};
-            if (taskId) {
+            if (taskApplyId) {
                 path = '/dashboard/approval';
-                query.taskId = taskId;
+                query.taskApplyId = taskApplyId;
             } else {
                 // 移动设备
                 if (isMobileDevice) {
@@ -110,7 +112,7 @@ async function loginbtn() {
             // 重定向到指定路径，并保留所有查询参数
             router.push({ path, query });
         } else {
-            console.log('response.message ===', response.message);
+            // console.log('response.message ===', response.message);
             ElMessage({
                 message: response.message,
                 type: 'error',

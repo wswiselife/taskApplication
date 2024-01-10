@@ -64,27 +64,34 @@ async function createURLBtn() {
     // 打开禁止编辑表单
     isSubmitting.value = true;
 
-    const response = await addURLListStore.fetchAddURLListAction(form);
-    // console.log('add response ===', response);
-    if (response && response.code === 200) {
-        // 关闭对话框
-        dialogFormVisible.value = false;
+    try {
+        const response = await addURLListStore.fetchAddURLListAction(form);
+        // console.log('add response ===', response);
+        if (response && response.code === 200) {
+            // 关闭对话框
+            dialogFormVisible.value = false;
+            showMobileCreateDialog.value = false;
+            // 数据共享
+            isCreateStoreURL.setIsCreatedURL(true);
+            // 提示新建完成
+            showSuccessMessage(`说明为${form.description}的网址新增成功。`);
+            // 清除所有数据
+            resetForm();
+            // 成功后关闭禁止编辑表单
+            isSubmitting.value = false;
+        } else {
+            showMobileCreateDialog.value = false;
+            showFailMessage(
+                `说明为${form.description}的网址新增失败，${response.message}`,
+            );
+            // 成功后关闭禁止编辑表单
+            isSubmitting.value = false;
+        }
+    } catch (error) {
         showMobileCreateDialog.value = false;
-        // 数据共享
-        isCreateStoreURL.setIsCreatedURL(true);
-        // 提示新建完成
-        showSuccessMessage(`说明为${form.description}的网址新增成功。`);
-        // 清除所有数据
-        resetForm();
-        // 成功后关闭禁止编辑表单
         isSubmitting.value = false;
-    } else {
-        showMobileCreateDialog.value = false;
-        showFailMessage(
-            `说明为${form.description}的网址修改失败，${response.message}`,
-        );
-        // 成功后关闭禁止编辑表单
-        isSubmitting.value = false;
+        showFailMessage('网址新增失败，' + error);
+        console.log('error');
     }
 }
 /********************************\

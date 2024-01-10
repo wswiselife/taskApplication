@@ -108,6 +108,7 @@ export const useAuditTaskStore = defineStore('auditTask', {
         async fetchAuditTaskAction() {
             const response = await getAuditTaskData();
             this.auditTaskList = response.result;
+            return response;
         },
     },
 });

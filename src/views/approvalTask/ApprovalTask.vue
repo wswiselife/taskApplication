@@ -25,9 +25,9 @@ import {
 // import { disabledPreviousDates } from '@/utils/limitDateSelect';
 import { disabledPreviousDates } from '@/utils/limit/limitDateSelect';
 // 小时数校验
-import { validateHoursInput } from '@/utils/validate/validateHoursInput';
+// import { validateHoursInput } from '@/utils/validate/validateHoursInput';
 // 点数校验
-import { validatePoint } from '@/utils/validate/validatePoint';
+// import { validatePoint } from '@/utils/validate/validatePoint';
 
 // 导入时间&分钟选择
 // import HourAndMinSelect from '@/components/hour-min-select/HourAndMinSelect.vue';
@@ -50,19 +50,132 @@ import {
 import { validateDateInput } from '@/utils/validate/validateDate';
 // 链接审批数据共享
 import { useIsLinkApprovalStore } from '@/store/public';
+// 跳过store导入getTaskApplyById
+import { getTaskApplyById } from '@/api/modules/task';
+// 任务描述验证
+import { validateDescriptionInput } from '@/utils/validate/validateDescript';
 
 /********************************\
  * 获取权限处理
- \********************************/
+\********************************/
 const authorityList = ref([]);
-onMounted(() => {
+const isLinkApproval = ref('');
+const linkApplyId = route.query.taskApplyId;
+const isNoApproval = ref(false);
+onMounted(async () => {
     // 从 localStorage 中获取权限信息
     const storedAuthorityList = localStorage.getItem('authorityList');
     if (storedAuthorityList) {
         authorityList.value = JSON.parse(storedAuthorityList);
     }
-    getAuditUserData();
-    isDataLoaded.value = true;
+
+    // 存储路由信息
+    isLinkApproval.value = Boolean(linkApplyId);
+    isLinkApprovalStore.setIsLinkApproval(isLinkApproval.value);
+
+    // 如果是单独审批
+    // linkId应该存储在localhost中
+    if (linkApplyId) {
+        // 获取所有的列表数据，找到其中应该审批的那个
+        // await getAuditUserData();
+        // 获取任务申请的数据和状态
+        try {
+            const response = await getTaskApplyByIdFun(linkApplyId);
+            // console.log('response ===', response);
+
+            // 增加token过期时的情况-在路由中添加
+            /**
+             * 判断审批人是不是本人确定有没有权限进行审批
+             */
+            const applyAuditName = response.result.applyAuditId;
+            const approverName = localStorage.getItem('userId');
+
+            // 证明这是该审批人的任务
+            if (applyAuditName == approverName) {
+                // 如果是已经审批过了
+                if (response.result.status == '已审批') {
+                    // 将链接转为false
+                    // 处理成不是链接
+                    isLinkApproval.value = false;
+                    isLinkApprovalStore.setIsLinkApproval(false);
+                    showFailMessage(
+                        '任务申请审批失败，该任务申请已审批，不能重复审批。',
+                    );
+                    if (isMobileDevice) {
+                        router.push({ path: '/mobileexplore' });
+                    } else {
+                        router.push({ path: '/dashboard/approval' });
+                    }
+                    await getAuditUserData();
+                } else if (response.result.status == 'D') {
+                    showFailMessage(
+                        '任务申请审批失败，该任务申请已删除，不能审批。',
+                    );
+                    // 处理成不是链接
+                    isLinkApproval.value = false;
+                    isLinkApprovalStore.setIsLinkApproval(false);
+                    if (isMobileDevice) {
+                        router.push({ path: '/mobileexplore' });
+                    } else {
+                        router.push({ path: '/dashboard/approval' });
+                    }
+                    await getAuditUserData();
+                } else {
+                    // 还没有进行审批的
+                    // 焦点控制
+                    isNoApproval.value = true;
+                    focusInput();
+                    const selectedItem = {
+                        planFinishDate: response.result.planFinishDate,
+                        taskDescription: response.result.taskDescription,
+                        planFinishHour: response.result.planFinishHour,
+                        employeeName: response.result.employeeName,
+                        projectName: response.result.projectName,
+                        taskTypeName: response.result.taskTypeName,
+                    };
+                    await getPlanFinishList();
+                    // 获取列表之后填充数据
+                    // showMobileApprovalDialogBtn(linkApplyId);
+
+                    // const selectedItem = auditTaskList.value.find(
+                    //     (item) => item.id == linkApplyId,
+                    // );
+
+                    // if (selectedItem) {
+                    // 时间显示处理
+                    applyLinkForm.finishDateTime = getFormattedDateThree(
+                        selectedItem.planFinishDate,
+                    );
+                    applyLinkForm.taskDescription =
+                        selectedItem.taskDescription;
+
+                    applyLinkForm.finishDate = getFormattedDateTwo(
+                        selectedItem.planFinishDate,
+                    );
+
+                    applyLinkForm.finishHour = selectedItem.planFinishHour;
+                    // 单独审批时数据补全
+                    vantForm.vanPlanHourName = selectedItem.planFinishHour;
+
+                    // 只需要显示的内容（申请人、项目名称、任务类型）
+                    onlyShow.employeeName = selectedItem.employeeName;
+                    onlyShow.projectName = selectedItem.projectName;
+                    onlyShow.taskTypeName = selectedItem.taskTypeName;
+                }
+            } else {
+                // 没有该权限
+                noPermission.value = true;
+                // showFailMessage('你没有该任务申请审批的权限。');
+            }
+        } catch (error) {
+            showFailMessage('任务申请审批失败，' + error);
+            console.log('error');
+        }
+    } else {
+        // 全部审批时，获取任务审批列表数据
+        await getAuditUserData();
+        isDataLoaded.value = true;
+    }
 });
 /********************************\
  * 公共引入处理
@@ -80,6 +193,25 @@ const deleteTask = useDeleteTaskStore();
 const isLinkApprovalStore = useIsLinkApprovalStore();
 
 /********************************\
+ * 获取审批列表接口
+ \********************************/
+async function getAuditUserData() {
+    try {
+        const res = await useAuditTaskList.fetchAuditTaskAction();
+        if (res && res.code == 200) {
+            return res;
+        }
+    } catch (error) {
+        showFailMessage('获取申请审批数据失败，' + error.message + '。');
+        console.log('error');
+    }
+
+    // console.log('任务审批 auditTaskList ===', auditTaskList);
+}
+const useAuditTaskList = useAuditTaskStore();
+const { auditTaskList } = storeToRefs(useAuditTaskList);
+
+/********************************\
  * 获取计划完成小时数
  \********************************/
 const planFinishHourList = ref([]);
@@ -87,32 +219,21 @@ const planFinishHourListMap = ref({});
 async function getPlanFinishList() {
     const response = await usePlanFinishHourList.fetchPlanFinishHourAction();
     // console.log('计划完成小时数response ===', response);
-    if (response && response.code === 200) {
-        planFinishHourList.value = response.result;
-        planFinishHourListMap.value = response.result.reduce(
-            (map, planFinishHour) => {
-                map[planFinishHour.id] = planFinishHour.taskPoints;
-                return map;
-            },
-            {},
-        );
-    } else {
-        // ElMessage({
-        //     message: '获取审批人失败',
-        //     type: 'error',
-        // });
+    try {
+        if (response && response.code === 200) {
+            planFinishHourList.value = response.result;
+            planFinishHourListMap.value = response.result.reduce(
+                (map, planFinishHour) => {
+                    map[planFinishHour.id] = planFinishHour.taskPoints;
+                    return map;
+                },
+                {},
+            );
+        }
+    } catch (error) {
+        console.log('error');
     }
 }
-
-/********************************\
- * 获取审批列表接口
- \********************************/
-async function getAuditUserData() {
-    await useAuditTaskList.fetchAuditTaskAction();
-    // console.log('任务审批 auditTaskList ===', auditTaskList);
-}
-const useAuditTaskList = useAuditTaskStore();
-const { auditTaskList } = storeToRefs(useAuditTaskList);
 
 /********************************\
  * 获取审批同意接口
@@ -139,9 +260,9 @@ const onlyShow = reactive({
 const showAgreeDialog = ref(false);
 // 选择的id
 const chooseAgreeId = ref(null);
-function showAgreeDialogFun(currentId) {
+async function showAgreeDialogFun(currentId) {
     // 选择时间获取
-    getPlanFinishList();
+    await getPlanFinishList();
     chooseAgreeId.value = currentId;
     form.chooseAgreeId = currentId;
     showAgreeDialog.value = true;
@@ -170,6 +291,7 @@ function showAgreeDialogFun(currentId) {
  \********************************/
 function resetForm() {
     form.point = '';
+    // console.log('点击');
     // 网络导致的请求失败退出后,处理无法点击问题
     isSubmitting.value = false;
     approvalLoading.value = false;
@@ -181,6 +303,7 @@ function resetForm() {
 const approvalLoading = ref(false);
 async function agreeFun() {
     // vant组件和ele组件差异处理
+    // 如果时链接
     if (isLinkApproval.value) {
         form.point = applyLinkForm.point;
         form.finishDate = applyLinkForm.finishDate;
@@ -191,9 +314,18 @@ async function agreeFun() {
     // console.log('审批共用的校验方法form ===', form);
 
     // 验证点数
-    const validatePointInputResult = validatePoint(form.point);
-    if (!validatePointInputResult.isValid) {
-        showFailMessage(validatePointInputResult.message);
+    // const validatePointInputResult = validatePoint(form.point);
+    // if (!validatePointInputResult.isValid) {
+    //     showFailMessage(validatePointInputResult.message);
+    //     return;
+    // }
+    if (form.point == undefined || form.point == null) {
+        showFailMessage('请选择任务点数。');
+        return;
+    }
+
+    if (form.finishHour == undefined || form.finishHour == null) {
+        showFailMessage('请选择计划完成小时数。');
         return;
     }
 
@@ -218,9 +350,18 @@ async function agreeFun() {
     }
 
     // 验证小时数
-    const validateHoursInputResult = validateHoursInput(form.finishHour);
-    if (!validateHoursInputResult.isValid) {
-        showFailMessage(validateHoursInputResult.message);
+    // const validateHoursInputResult = validateHoursInput(form.finishHour);
+    // if (!validateHoursInputResult.isValid) {
+    //     showFailMessage(validateHoursInputResult.message);
+    //     return;
+    // }
+
+    // 任务描述
+    const validateDescriptionInputResult = validateDescriptionInput(
+        form.taskDescription,
+    );
+    if (!validateDescriptionInputResult.isValid) {
+        showFailMessage(validateDescriptionInputResult.message);
         return;
     }
 
@@ -233,39 +374,53 @@ async function agreeFun() {
     // 遮罩层控制，禁止点击控制
     approvalLoading.value = true;
 
-    const response = await useAgreeTask.fetchAgreeTaskAction(form);
+    try {
+        const response = await useAgreeTask.fetchAgreeTaskAction(form);
 
-    if (response.code === 200) {
-        // 关闭遮罩层，取消加载效果
-        approvalLoading.value = false;
-        // 成功后可编辑,用于下次审批任务
-        isSubmitting.value = false;
-        // 提示成功
-        showSuccessMessage(`任务审批成功，任务编号为${response.result.code}。`);
-        // 清空输入的点数
-        resetForm();
-        // 关闭对话框
-        showAgreeDialog.value = false;
-        showMobileApprovalDialog.value = false;
-        // 如果是单独审批
-        if (isLinkApproval.value) {
-            // 移动端单独审批
-            if (isMobileDevice) {
-                router.replace({ path: '/mobileexplore' });
-            } else {
-                router.replace({ path: '/dashboard/approval' });
+        if (response.code === 200) {
+            // 关闭遮罩层，取消加载效果
+            approvalLoading.value = false;
+            // 成功后可编辑,用于下次审批任务
+            isSubmitting.value = false;
+            // 提示成功
+            showSuccessMessage(
+                `任务申请审批成功，任务编号为${response.result.code}。`,
+            );
+            // 清空输入的点数
+            resetForm();
+            // 关闭对话框
+            showAgreeDialog.value = false;
+            showMobileApprovalDialog.value = false;
+            // 如果是单独审批
+            if (isLinkApproval.value) {
+                isLinkApproval.value = false;
+                isLinkApprovalStore.setIsLinkApproval(false);
+                // 移动端单独审批
+                if (isMobileDevice) {
+                    router.replace({ path: '/mobileexplore' });
+                } else {
+                    router.replace({ path: '/dashboard/approval' });
+                }
             }
+            // 重新发送请求
+            useAuditTaskList.fetchAuditTaskAction();
+        } else {
+            // 弹出框不关闭
+            showAgreeDialog.value = true;
+            // 成功后可编辑,用于下次审批任务
+            isSubmitting.value = false;
+            // 加载效果取消，按钮变为可点击
+            approvalLoading.value = false;
+            showFailMessage(`任务申请审批失败，${response.message}。`);
         }
-        // 重新发送请求
-        useAuditTaskList.fetchAuditTaskAction();
-    } else {
+    } catch (error) {
         // 弹出框不关闭
         showAgreeDialog.value = true;
         // 成功后可编辑,用于下次审批任务
         isSubmitting.value = false;
         // 加载效果取消，按钮变为可点击
         approvalLoading.value = false;
-        showFailMessage(`任务审批失败，${response.message}`);
+        showFailMessage(`任务申请审批失败，${error}。`);
     }
 }
 /********************************\
@@ -305,22 +460,27 @@ function showDeleteDialogFun(currentId) {
  \********************************/
 async function deleteTaskFun() {
     const type = 2;
-    const response = await deleteTask.fetchDeleteTaskAction({
-        currentId: chooseDeleteId.value,
-        // 直接多传递一个type
-        type,
-    });
+    try {
+        const response = await deleteTask.fetchDeleteTaskAction({
+            currentId: chooseDeleteId.value,
+            // 直接多传递一个type
+            type,
+        });
 
-    // console.log('删除的 response ===', response);
-    if (response && response.code === 200) {
-        // 清除对话框
-        showDeleteDialog.value = false;
-        // 提示新建完成
-        showSuccessMessage('任务申请删除成功。');
-        // 重新获取数据
-        getAuditUserData();
-    } else {
-        showFailMessage(`任务申请删除失败，${response.message}`);
+        // console.log('删除的 response ===', response);
+        if (response && response.code === 200) {
+            // 清除对话框
+            showDeleteDialog.value = false;
+            // 提示新建完成
+            showSuccessMessage('任务申请删除成功。');
+            // 重新获取数据
+            await getAuditUserData();
+        } else {
+            showFailMessage(`任务申请删除失败，${response.message}。`);
+        }
+    } catch (error) {
+        showFailMessage(`任务申请删除失败，${error.message}。`);
+        console.log('error ===', error);
     }
 }
 /********************************\
@@ -340,10 +500,23 @@ const focusInput = () => {
 /********************************\
  * 刷新控制按钮
  \********************************/
-const refreshApplyList = () => {
-    getAuditUserData();
-    showSuccessMessage('任务审批列表数据已更新');
+const refreshApplyList = async () => {
+    try {
+        const res = await useAuditTaskList.fetchAuditTaskAction();
+
+        // console.log('res ===', res);
+        if (res && res.code == 200) {
+            showSuccessMessage('任务申请审批列表数据已更新。');
+        } else {
+            showFailMessage('任务申请审批列表数据更新失败。');
+        }
+    } catch (error) {
+        console.log('error');
+        showFailMessage('任务申请审批列表数据更新失败，' + error);
+    }
 };
+
+const debounceRefreshApplyList = debounce(refreshApplyList, 600);
 
 /********************************\
  * 审批日期时间同步问题
@@ -381,8 +554,10 @@ const goBack = () => {
 const showMobileApprovalDialog = ref(false);
 const mobileApprovalCurrentId = ref();
 
-// 补全数据
-const showMobileApprovalDialogBtn = (currentId) => {
+// 移动端补全数据
+const showMobileApprovalDialogBtn = async (currentId) => {
+    // 移动端补全数据也要获取任务点数的接口
+    await getPlanFinishList();
     // 点击打开弹出层
     showMobileApprovalDialog.value = true;
     // 保存所选的任务的id
@@ -398,6 +573,7 @@ const showMobileApprovalDialogBtn = (currentId) => {
 
     if (selectedItem) {
         // 时间显示处理
+        // form.point = '';
         form.finishDateTime = getFormattedDateThree(
             selectedItem.planFinishDate,
         );
@@ -411,8 +587,10 @@ const showMobileApprovalDialogBtn = (currentId) => {
         onlyShow.employeeName = selectedItem.employeeName; // 审批人ID
 
         // 审批补全（vant的特殊补全机制）
-        // 移动端全部审批时需要
+        // 移动端全部审批时数据补全
+        // 退出再进的时候，把任务点数清空
         vantForm.vanPlanHourName = selectedItem.planFinishHour;
+        vantForm.vantPoints = '';
     }
     // console.log('全部审批时的form ===', form);
 };
@@ -423,6 +601,7 @@ const showMobileApprovalDialogBtn = (currentId) => {
 const showPlanDatePicker = ref(false);
 const showPlanDateTimePicker = ref(false);
 const showPlanHourPicker = ref(false);
+const showPointPicker = ref(false);
 // const vantPlanHourName = ref('');
 // 计划完成小时数获取
 const onPlanHourConfirm = ({ selectedOptions }) => {
@@ -430,6 +609,17 @@ const onPlanHourConfirm = ({ selectedOptions }) => {
     applyLinkForm.finishHour = selectedOptions[0].value;
     vantForm.vanPlanHourName = selectedOptions[0].text;
 };
+
+// 任务点数
+const onPointConfirm = ({ selectedOptions }) => {
+    showPointPicker.value = false;
+    // 连接审批时，移动端
+    applyLinkForm.point = selectedOptions[0].value;
+    // 列表审批时，移动端
+    form.point = selectedOptions[0].value;
+    vantForm.vantPoints = selectedOptions[0].text;
+};
+
 // 日期选择
 const onPlanDateConfirm = (date) => {
     showPlanDatePicker.value = false;
@@ -490,7 +680,7 @@ async function mobileDeleteTaskFun() {
         showMobileDeleteDialog.value = false;
         // 提示新建完成
         showSuccessMessage('任务申请删除成功。');
-        getAuditUserData(); // 重新获取数据
+        await getAuditUserData(); // 重新获取数据
     } else {
         // 可以添加其他的错误处理逻辑
         // console.log('出错了');
@@ -527,22 +717,13 @@ const vantPlanHourList = computed(() => {
 });
 
 /********************************\
- * 获取路由信息
- \********************************/
-const isLinkApproval = ref('');
-const linkApplyId = route.query.taskId;
-// console.log('linkApplyId ===', linkApplyId);
-// 存储路由信息
-isLinkApproval.value = Boolean(linkApplyId);
-// console.log('isLinkApproval.value ===', isLinkApproval.value);
-isLinkApprovalStore.setIsLinkApproval(isLinkApproval.value);
-
-/********************************\
  * 对选中的那条数据进行渲染
  \********************************/
 // 没有权限时
 const noPermission = ref(false);
-
+/**
+ * pc和移动端连接的表单
+ */
 const applyLinkForm = reactive({
     point: null,
     chooseAgreeId: null,
@@ -551,57 +732,30 @@ const applyLinkForm = reactive({
     finishHour: null,
     taskDescription: '',
 });
-const vantForm = reactive({ vanPlanHourName: '' });
-
-// 单独审批补全
-onMounted(async () => {
-    if (linkApplyId) {
-        // 获取所有的列表数据，找到其中应该审批的那个
-        await getAuditUserData();
-        getPlanFinishList();
-        // 获取列表之后填充数据
-        // showMobileApprovalDialogBtn(linkApplyId);
-
-        const selectedItem = auditTaskList.value.find(
-            (item) => item.id == linkApplyId,
-        );
-
-        if (selectedItem) {
-            // 时间显示处理
-            applyLinkForm.finishDateTime = getFormattedDateThree(
-                selectedItem.planFinishDate,
-            );
-            applyLinkForm.taskDescription = selectedItem.taskDescription;
-
-            applyLinkForm.finishDate = getFormattedDateTwo(
-                selectedItem.planFinishDate,
-            );
-
-            applyLinkForm.finishHour = selectedItem.planFinishHour;
-            // 时间需要变更
-            vantForm.vanPlanHourName = selectedItem.planFinishHour;
-
-            // 只需要显示的内容（申请人、项目名称、任务类型）
-            onlyShow.employeeName = selectedItem.employeeName;
-            onlyShow.projectName = selectedItem.projectName;
-            onlyShow.taskTypeName = selectedItem.taskTypeName;
-        } else {
-            // todo 20231103(合理性问题)
-            noPermission.value = true;
-            // if (isMobileDevice) {
-            //     showFailToast('你还没拥有该审批权限');
-            // } else {
-            //     ElMessage({
-            //         message: '你还没拥有该审批权限',
-            //         type: 'error',
-            //     });
-            // }
-            // console.log('noPermission ===', noPermission.value);
-        }
-    }
-    // 焦点控制
-    focusInput();
+const vantForm = reactive({
+    vanPlanHourName: '',
+    vantPoints: '',
 });
+
+/**
+ * 根据任务申请id获取该条的信息，用于进行单独审批操作
+ * @param {number} taskId
+ */
+const getTaskApplyByIdFun = async (taskApplyId) => {
+    try {
+        const response = await getTaskApplyById(taskApplyId);
+        // console.log('response11 ===', response);
+        if (response && response.code == 200) {
+            return response;
+        }
+    } catch (error) {
+        showFailMessage('无法进行任务审批，获取任务审批数据失败' + error);
+    }
+};
+
+const clickOption = (e) => {
+    console.log('e ===', e);
+};
 </script>
 
 <template>
@@ -620,7 +774,7 @@ onMounted(async () => {
 
         <div class="approval-box">
             <div class="refresh-content">
-                <div @click="refreshApplyList" class="refresh-box">
+                <div @click="debounceRefreshApplyList" class="refresh-box">
                     <Refresh></Refresh>
                 </div>
             </div>
@@ -823,8 +977,24 @@ onMounted(async () => {
                 </el-form-item>
 
                 <!-- 任务点数 -->
-                <el-form-item label="任务点数" prop="point" :label-width="120">
+                <!-- <el-form-item label="任务点数" prop="point" :label-width="120">
                     <el-input type="text" v-model="form.point" ref="pointRef" />
+                </el-form-item> -->
+
+                <!-- 任务点数 -->
+                <el-form-item label="任务点数" prop="name" :label-width="120">
+                    <!-- todo -->
+                    <el-select
+                        placeholder="请选择任务点数"
+                        v-model="form.point"
+                    >
+                        <el-option
+                            v-for="auditUser in planFinishHourList"
+                            :key="auditUser.id"
+                            :label="auditUser.taskPoints"
+                            :value="auditUser.taskPoints"
+                        />
+                    </el-select>
                 </el-form-item>
 
                 <!-- 计划完成小时数 -->
@@ -944,7 +1114,7 @@ onMounted(async () => {
                     <van-icon name="arrow-left" />
                 </div>
                 <div class="title">任务审批</div>
-                <div class="createBtn" @click="refreshApplyList">
+                <div class="createBtn" @click="debounceRefreshApplyList">
                     <van-icon name="replay" size="22" />
                 </div>
             </div>
@@ -1029,6 +1199,7 @@ onMounted(async () => {
             @opened="focusInput"
             @cancel="resetForm"
             confirmButtonText="同意审批"
+            style="max-height: 70%; overflow-y: auto"
         >
             <van-form :disabled="isSubmitting">
                 <!-- 项目名称 -->
@@ -1050,12 +1221,23 @@ onMounted(async () => {
                     label-width="100px"
                 ></van-cell>
 
-                <!-- 计划完成时间 -->
-                <van-field
+                <!-- 任务点数 -->
+                <!-- <van-field
                     label="任务点数"
                     v-model="form.point"
                     placeholder="请输入任务点数"
                     ref="pointRef"
+                    label-width="100px"
+                ></van-field> -->
+
+                <!-- 任务点数 -->
+                <van-field
+                    is-link
+                    readonly
+                    label="任务点数"
+                    v-model="vantForm.vantPoints"
+                    placeholder="请选择任务点数"
+                    @click="showPointPicker = true"
                     label-width="100px"
                 ></van-field>
 
@@ -1122,6 +1304,15 @@ onMounted(async () => {
         </van-dialog>
 
         <!-- 弹出框 -->
+        <!-- 任务点数 -->
+        <van-popup v-model:show="showPointPicker" round position="bottom">
+            <van-picker
+                :columns="vantPlanHourList"
+                @cancel="showPointPicker = false"
+                @confirm="onPointConfirm"
+                @click-option="clickOption"
+            />
+        </van-popup>
         <!-- 计划完成小时数 -->
         <van-popup v-model:show="showPlanHourPicker" round position="bottom">
             <van-picker
@@ -1160,7 +1351,9 @@ onMounted(async () => {
     <!-- 链接-PC端审批 -->
     <div
         class="link-pc-approval"
-        v-if="isLinkApproval && !isMobileDevice && !noPermission"
+        v-if="
+            isLinkApproval && !isMobileDevice && !noPermission && isNoApproval
+        "
     >
         <div class="link-content">
             <el-form :model="form" :disabled="isSubmitting">
@@ -1195,12 +1388,27 @@ onMounted(async () => {
                 </el-form-item>
 
                 <!-- 任务点数 -->
-                <el-form-item label="任务点数" prop="point" :label-width="120">
+                <!-- <el-form-item label="任务点数" prop="point" :label-width="120">
                     <el-input
                         type="text"
                         v-model="applyLinkForm.point"
                         ref="pointRef"
                     />
+                </el-form-item> -->
+
+                <!-- 计划完成小时数 -->
+                <el-form-item label="任务点数" prop="name" :label-width="120">
+                    <el-select
+                        placeholder="请选择任务点数"
+                        v-model="applyLinkForm.point"
+                    >
+                        <el-option
+                            v-for="auditUser in planFinishHourList"
+                            :key="auditUser.id"
+                            :label="auditUser.taskPoints"
+                            :value="auditUser.taskPoints"
+                        />
+                    </el-select>
                 </el-form-item>
 
                 <!-- 计划完成小时数 -->
@@ -1227,7 +1435,7 @@ onMounted(async () => {
                         <el-date-picker
                             v-model="applyLinkForm.finishDate"
                             type="date"
-                            placeholder="选择计划完成日期"
+                            placeholder="请选择计划完成日期"
                             style="width: 100%"
                             :disabledDate="disabledPreviousDates"
                             @change="handleDateClose"
@@ -1297,11 +1505,22 @@ onMounted(async () => {
                     title="申请人"
                 ></van-cell>
                 <!-- 任务点数 -->
-                <van-field
+                <!-- <van-field
                     label="任务点数"
                     v-model="applyLinkForm.point"
                     placeholder="请输入任务点数"
                     ref="pointRef"
+                    label-width="100px"
+                ></van-field> -->
+
+                <!-- 任务点数 -->
+                <van-field
+                    is-link
+                    readonly
+                    label="任务点数"
+                    v-model="applyLinkForm.point"
+                    placeholder="请选择任务点数"
+                    @click="showPointPicker = true"
                     label-width="100px"
                 ></van-field>
 
@@ -1375,6 +1594,16 @@ onMounted(async () => {
             <div class="link-cencel" @click="resetForm">取消</div>
             <div class="link-sure" @click="debounceAgreeFun">同意审批</div>
         </div>
+
+        <!-- 任务点数 -->
+        <van-popup v-model:show="showPointPicker" round position="bottom">
+            <van-picker
+                :columns="vantPlanHourList"
+                @cancel="showPointPicker = false"
+                @confirm="onPointConfirm"
+                @click-option="clickOption"
+            />
+        </van-popup>
 
         <van-popup v-model:show="showPlanHourPicker" round position="bottom">
             <van-picker

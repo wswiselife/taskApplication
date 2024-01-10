@@ -54,7 +54,7 @@ import {
 
 import { useIsCreatedStore } from '@/store/public';
 // 校验
-import { validateHoursInput } from '@/utils/validate/validateHoursInput';
+// import { validateHoursInput } from '@/utils/validate/validateHoursInput';
 import {
     getFormattedDate,
     getFormattedDateTwo,
@@ -84,7 +84,8 @@ import {
     showFailMessage,
     showSuccessMessage,
 } from '@/utils/show-message/showSFmessage';
-
+// 钉钉同步功能
+import { getDingApprovalResultData } from '@/api/dingding/dingding';
 /********************************\
  * 获取权限处理
 \********************************/
@@ -115,7 +116,7 @@ onMounted(async () => {
     // getAuditUserList();
     // 计划完成小时数选择修改
     // getPlanFinishList();
-    // 得到数据之后，获取成功
+    // 得到数据之后，获取成功（移动端数据）
     isDataLoaded.value = true;
 });
 
@@ -143,7 +144,8 @@ async function getEmployeeTasList() {
         // 返回值通过store获取，这里只负责发送请求
         await employeeTaskStore.fetchEmployeeTaskAction();
     } catch (error) {
-        showFailMessage(error);
+        console.log('error ===', error);
+        showFailMessage('获取任务申请列表数据失败，' + error.message);
     }
 
     // console.log('申请列表数据 ====', employeeTaskList);
@@ -208,6 +210,7 @@ function dialogFormVisibleFun(currentId) {
     dialogFormVisible.value = true;
     chooseModifyId.value = currentId;
 
+    // 持久化
     // 调用用户权限项目接口
     getUserProjectList();
     // 调用获取任务类型接口
@@ -249,22 +252,20 @@ function dialogFormVisibleFun(currentId) {
 const projectList = ref([]);
 const projectNameMap = ref({}); // 记录映射关系
 async function getUserProjectList() {
-    const response = await userProjectList.fetchUserProjectListAction(
-        userIdStore.userId,
-    );
-    // console.log('项目idresponse ===', response);
-    if (response && response.code === 200) {
-        projectList.value = response.result;
-        // 根据 projectList 创建 projectNameMap
-        projectNameMap.value = response.result.reduce((map, project) => {
-            map[project.id] = project.name;
-            return map;
-        }, {});
-    } else {
-        // ElMessage({
-        //     message: response.message,
-        //     type: 'error',
-        // });
+    try {
+        const response = await userProjectList.fetchUserProjectListAction(
+            userIdStore.userId,
+        );
+        if (response && response.code === 200) {
+            projectList.value = response.result;
+            // 根据 projectList 创建 projectNameMap
+            projectNameMap.value = response.result.reduce((map, project) => {
+                map[project.id] = project.name;
+                return map;
+            }, {});
+        }
+    } catch (error) {
+        console.log('error');
     }
 }
 
@@ -274,20 +275,19 @@ async function getUserProjectList() {
 const taskTypeList = ref([]);
 const taskTypeMap = ref({});
 async function getTaskTypeList() {
-    const response = await useTaskTypeList.fetchTaskTypeListAction();
-    // console.log('任务类型response ===', response);
-    if (response && response.code === 200) {
-        taskTypeList.value = response.result;
-        // 根据 taskTypeList 创建 taskTypeMap
-        taskTypeMap.value = response.result.reduce((map, taskType) => {
-            map[taskType.id] = taskType.name;
-            return map;
-        }, {});
-    } else {
-        // ElMessage({
-        //     message: '获取任务类型失败',
-        //     type: 'error',
-        // });
+    try {
+        const response = await useTaskTypeList.fetchTaskTypeListAction();
+        // console.log('任务类型response ===', response);
+        if (response && response.code === 200) {
+            taskTypeList.value = response.result;
+            // 根据 taskTypeList 创建 taskTypeMap
+            taskTypeMap.value = response.result.reduce((map, taskType) => {
+                map[taskType.id] = taskType.name;
+                return map;
+            }, {});
+        }
+    } catch (error) {
+        console.log('error');
     }
 }
 
@@ -297,20 +297,19 @@ async function getTaskTypeList() {
 const auditUserList = ref([]);
 const auditUserMap = ref({});
 async function getAuditUserList() {
-    const response = await useAuditTypeList.fetchAuditUserListAction();
-    // console.log('审批人response ===', response);
-    if (response && response.code === 200) {
-        auditUserList.value = response.result;
-        // 根据 auditUserList 创建 auditUserMap
-        auditUserMap.value = response.result.reduce((map, auditUser) => {
-            map[auditUser.id] = auditUser.nameEN;
-            return map;
-        }, {});
-    } else {
-        // ElMessage({
-        //     message: '获取审批人失败',
-        //     type: 'error',
-        // });
+    try {
+        const response = await useAuditTypeList.fetchAuditUserListAction();
+        // console.log('审批人response ===', response);
+        if (response && response.code === 200) {
+            auditUserList.value = response.result;
+            // 根据 auditUserList 创建 auditUserMap
+            auditUserMap.value = response.result.reduce((map, auditUser) => {
+                map[auditUser.id] = auditUser.nameEN;
+                return map;
+            }, {});
+        }
+    } catch (error) {
+        console.log('error');
     }
 }
 
@@ -320,22 +319,22 @@ async function getAuditUserList() {
 const planFinishHourList = ref([]);
 const planFinishHourListMap = ref({});
 async function getPlanFinishList() {
-    const response = await usePlanFinishHourList.fetchPlanFinishHourAction();
-    // console.log('计划完成小时数response ===', response);
-    if (response && response.code === 200) {
-        planFinishHourList.value = response.result;
-        planFinishHourListMap.value = response.result.reduce(
-            (map, planFinishHour) => {
-                map[planFinishHour.id] = planFinishHour.taskPoints;
-                return map;
-            },
-            {},
-        );
-    } else {
-        // ElMessage({
-        //     message: '获取审批人失败',
-        //     type: 'error',
-        // });
+    try {
+        const response =
+            await usePlanFinishHourList.fetchPlanFinishHourAction();
+        // console.log('计划完成小时数response ===', response);
+        if (response && response.code === 200) {
+            planFinishHourList.value = response.result;
+            planFinishHourListMap.value = response.result.reduce(
+                (map, planFinishHour) => {
+                    map[planFinishHour.id] = planFinishHour.taskPoints;
+                    return map;
+                },
+                {},
+            );
+        }
+    } catch (error) {
+        console.log('error');
     }
 }
 
@@ -344,19 +343,18 @@ async function getPlanFinishList() {
 \********************************/
 async function updateTaskFun() {
     // 验证小时数
-    const validateHoursInputResult = validateHoursInput(form.planFinishHour);
-    if (!validateHoursInputResult.isValid) {
-        if (isMobileDevice) {
-            showFailToast(validateHoursInputResult.message);
-        } else {
-            ElMessage({
-                message: validateHoursInputResult.message,
-                type: 'error',
-            });
-        }
-
-        return;
-    }
+    // const validateHoursInputResult = validateHoursInput(form.planFinishHour);
+    // if (!validateHoursInputResult.isValid) {
+    //     if (isMobileDevice) {
+    //         showFailToast(validateHoursInputResult.message);
+    //     } else {
+    //         ElMessage({
+    //             message: validateHoursInputResult.message,
+    //             type: 'error',
+    //         });
+    //     }
+    //     return;
+    // }
 
     // 任务描述
     const validateDescriptionInputResult = validateDescriptionInput(
@@ -424,11 +422,11 @@ async function updateTaskFun() {
             // 提示新建完成
             showSuccessMessage(`任务申请修改成功。`);
 
-            getEmployeeTasList(); // 重新获取数据
             dialogFormVisible.value = false;
             showMobileUpdataDialog.value = false;
             // 成功后关闭禁止编辑表单
             isSubmitting.value = false;
+            await getEmployeeTasList(); // 重新获取数据
         } else {
             showFailMessage(`任务申请修改失败，${response.message}`);
             isSubmitting.value = false;
@@ -734,7 +732,7 @@ async function singleUpdatePlanFinishDate(row) {
     }
 
     try {
-        console.log('选择的日期', singleUpdateFinishDate);
+        console.log(singleUpdateFinishDate);
         // 如果需要，你可以在这里调用其他函数或更新其他数据
         const response =
             await singleUpdatePlanFinishDateStore.fetchSUPlanFinishDateAction({
@@ -1027,6 +1025,20 @@ const clearDate = () => {
 const handleCopyLink = (id) => {
     copyLinkToClipboard(id);
 };
+
+const debounceHandleCopyLink = debounce(handleCopyLink, 600);
+
+// 选择同步的任务申请的id
+// 需要拿到instanceid,拿到之后需要查询，得到结果之后，
+// 把结果中的信息，和对应的id号，传递给后端进行审批
+const dingdingSync = async (instanceId, applyId) => {
+    // console.log('instanceId ===', instanceId);
+    await getDingApprovalResultData(instanceId, applyId);
+    // console.log('applyId ===', applyId);
+    // console.log('res ===', res);
+};
+
+const debounceDingTalkSync = debounce(dingdingSync, 1000);
 </script>
 
 <template>
@@ -1059,6 +1071,18 @@ const handleCopyLink = (id) => {
                     ref="xTable"
                     class="table"
                 >
+                    <!-- 操作 -->
+                    <vxe-column
+                        field="项目id"
+                        title="ID"
+                        width="80px"
+                        header-align="center"
+                        align="center"
+                    >
+                        <template #default="{ row }">
+                            {{ row.id }}
+                        </template>
+                    </vxe-column>
                     <!-- 项目名称 -->
                     <vxe-column
                         field="projectName"
@@ -1234,17 +1258,26 @@ const handleCopyLink = (id) => {
                     <vxe-column
                         field="operate"
                         title="操作"
-                        width="220px"
+                        width="390px"
                         header-align="center"
                         align="center"
                     >
                         <template #default="{ row }">
                             <button
-                                @click="handleCopyLink(row.id)"
+                                @click="
+                                    debounceDingTalkSync(row.instanceId, row.id)
+                                "
+                                class="syncDing"
+                            >
+                                刷新钉钉状态
+                            </button>
+                            <button
+                                @click="debounceHandleCopyLink(row.id)"
                                 class="copyLink"
                             >
                                 复制链接
                             </button>
+
                             <button
                                 @click="dialogFormVisibleFun(row.id)"
                                 class="update"
@@ -1522,8 +1555,22 @@ const handleCopyLink = (id) => {
                 <!-- 操作 -->
                 <div class="operate-box">
                     <div
+                        class="dingdingbtn operate"
+                        @click="debounceDingTalkSync(task.instanceId, task.id)"
+                    >
+                        <!-- <van-icon name="link-o" /> -->
+                        <img
+                            src="../../../public/dingding.png"
+                            alt=""
+                            width="18"
+                            height="18"
+                        />
+                        <div class="refresh">刷新钉钉状态</div>
+                    </div>
+
+                    <div
                         class="mobile-copy operate"
-                        @click="handleCopyLink(task.id)"
+                        @click="debounceHandleCopyLink(task.id)"
                     >
                         <van-icon name="link-o" />
                         复制链接
@@ -1747,15 +1794,20 @@ const handleCopyLink = (id) => {
         margin: 0 21px 10px 21px;
     }
 
-    .update,
-    .delete {
+    .syncDing {
         border: none;
         border-radius: 2px;
-        width: 54px;
-        height: 26px;
+        background-color: #ffeed5;
+        font-size: 12px;
+        font-family: Microsoft YaHei;
+        font-weight: 400;
+        color: #ffaf3b;
+        padding: 3px 15px;
+        margin-left: 11px;
     }
 
     .copyLink {
+        // width: 100px;
         border: none;
         border-radius: 2px;
         background-color: #fff0eb;
@@ -1763,7 +1815,8 @@ const handleCopyLink = (id) => {
         font-family: Microsoft YaHei;
         font-weight: 400;
         color: #ff6b3b;
-        padding: 3px 10px;
+        padding: 3px 15px;
+        margin-left: 11px;
     }
 
     .update {
@@ -1772,6 +1825,12 @@ const handleCopyLink = (id) => {
         font-family: Microsoft YaHei;
         font-weight: 400;
         color: #13b75c;
+        // color: #000000;
+        margin-left: 11px;
+        border: none;
+        border-radius: 2px;
+        width: 54px;
+        height: 26px;
     }
 
     .delete {
@@ -1780,8 +1839,18 @@ const handleCopyLink = (id) => {
         font-family: Microsoft YaHei;
         font-weight: 400;
         color: #e41731;
+        border: none;
+        border-radius: 2px;
+        width: 54px;
+        height: 26px;
+        margin-left: 11px;
     }
 
+    .syncDing:hover {
+        background-color: #ffaf3b;
+        color: #fff;
+        cursor: pointer;
+    }
     .copyLink:hover {
         background-color: #ff6b3b;
         color: #fff;
@@ -1798,10 +1867,6 @@ const handleCopyLink = (id) => {
         color: #fff;
         background-color: #ed5b5d;
         cursor: pointer;
-    }
-
-    .update {
-        margin: 0 11px;
     }
 
     // 对话框按钮样式
@@ -1916,15 +1981,22 @@ const handleCopyLink = (id) => {
 
 .operate-box {
     display: flex;
-    justify-content: flex-end;
-    flex-direction: flex-end;
-    margin: 5px 10px;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    margin: 5px 0px;
 }
 
 .operate {
     color: #666;
-    padding: 4px 5px;
+    padding: 4px 2px;
     margin-bottom: 2px;
+}
+
+.dingdingbtn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .mobile-delete {

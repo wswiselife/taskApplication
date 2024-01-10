@@ -1,4 +1,6 @@
+import { clearCacheFun } from '@/utils/clear-cache/clearCache';
 import { createRouter, createWebHashHistory } from 'vue-router';
+// import { getTaskApplyById } from '@/api/modules/task';
 
 const router = createRouter({
     // 路由模式
@@ -61,7 +63,7 @@ const router = createRouter({
     ],
 });
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
     // 获取token,判断是否已经登录
     const token = localStorage.getItem('token');
     // 获取用户权限列表
@@ -71,7 +73,7 @@ router.beforeEach((to, from, next) => {
     // 假设你有一个函数来检查用户是否有管理员权限
     const hasAdminAuthority = authorityList.includes('WEB_TaskApplyAudit');
     // 从URL中获取taskId
-    const taskId = to.query.taskId;
+    const taskApplyId = to.query.taskApplyId;
 
     if (to.matched.some((record) => record.meta.requiresAuth)) {
         if (to.meta.authority && !authorityList.includes(to.meta.authority)) {
@@ -85,43 +87,84 @@ router.beforeEach((to, from, next) => {
     if (to.path === '/') {
         if (!token) {
             // 用户未登录
-            if (taskId) {
-                // 如果有taskId，重定向到登录页面，并附带taskId和原始路径
+            if (taskApplyId) {
+                // 如果有taskApplyId，重定向到登录页面，并附带taskApplyId和原始路径
                 next({
                     path: '/login',
-                    query: { taskId: taskId },
+                    query: { taskApplyId: taskApplyId },
                 });
             } else {
-                // 如果没有taskId，直接重定向到登录页面，正常用户登录
+                // 如果没有taskApplyId，直接重定向到登录页面，正常用户登录
                 next('/login');
             }
-        } else if (token && !taskId) {
-            // 用户已登录，但没有提供taskId，就是平常的登录行为，重定向到默认页面，结合登录逻辑，跳转
+        } else if (token && !taskApplyId) {
+            // 用户已登录，但没有提供taskApplyId，就是平常的登录行为，重定向到默认页面，结合登录逻辑，跳转
             // 检查用户是否有访问该路由的权限，防止直接修改路由实现跳转
+
+            // 有token，但是过期，直接前往登录页面
             if (hasAdminAuthority) {
                 next('/dashboard/approval');
             } else {
                 next('/dashboard/apply');
             }
-            // next();
-        } else if (token && taskId) {
-            // 用户已登录并提供了taskId
-            if (hasAdminAuthority) {
-                // 用户有管理员权限，重定向到审批页面，并带上taskId
-                next({
-                    path: '/dashboard/approval',
-                    query: { taskId: taskId },
-                });
+        } else if (token && taskApplyId) {
+            // 已经登录，有token，但是token过期，直接前往登录页面
+            let response = await isTokenExpired(taskApplyId);
+            console.log('response ===', response);
+            if (response && response.code == 401) {
+                // 清除缓存
+                clearCacheFun();
+                if (hasAdminAuthority) {
+                    // 用户有管理员权限，重定向到审批页面，并带上taskApplyId
+                    next({
+                        path: '/login',
+                        query: { taskApplyId: taskApplyId },
+                    });
+                } else {
+                    // 用户没有管理员权限，重定向到无权限页面
+                    next('/nopermission');
+                }
             } else {
-                // 用户没有管理员权限，重定向到无权限页面
-                next('/nopermission');
+                // 用户已登录，token未过期，携带id前往审批页面
+                if (hasAdminAuthority) {
+                    // 用户有管理员权限，重定向到审批页面，并带上taskApplyId
+                    next({
+                        path: '/dashboard/approval',
+                        query: { taskApplyId: taskApplyId },
+                    });
+                } else {
+                    // 用户没有管理员权限，重定向到无权限页面
+                    next('/nopermission');
+                }
             }
+            // console.log('response ===', response);
         }
     } else {
         // 对于非根路径，保持默认行为
         next();
     }
 });
+
+const isTokenExpired = async (taskId) => {
+    let token = localStorage.getItem('token');
+    let res = await fetch(
+        import.meta.env.VITE_API_URL +
+            `/jsy/TaskApply/GetTaskApplyById?pTaskApplyId=${taskId}`,
+        {
+            method: 'GET',
+            headers: {
+                Authorization: 'Bearer ' + token,
+            },
+        },
+    );
+    // .then((response) => response.json())
+    // .then((data) => {
+    //     console.log('data ===', data);
+    //     return data;
+    // });
+    // console.log('res ===', res);
+    return res.json();
+};
 // 路由守卫
 // router.beforeEach((to, from, next) => {
 //     // 获取token,判断是否已经登录

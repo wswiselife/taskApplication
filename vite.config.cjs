@@ -58,6 +58,21 @@ const postcssPresetEnv = require('postcss-preset-env');
 
 module.exports = defineConfig({
     base: './',
+    server: {
+        proxy: {
+            // 将所有 '/api' 路径的请求代理到钉钉API
+            '/api': {
+                target: 'https://api.dingtalk.com',
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/api/, ''), // 重写路径，移除 '/api'
+            },
+            '/oapi': {
+                target: 'https://oapi.dingtalk.com',
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/oapi/, ''), // 重写路径，移除 '/api'
+            },
+        },
+    },
     plugins: [
         vue(),
         eslintPlugin({

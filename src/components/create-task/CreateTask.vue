@@ -49,6 +49,11 @@ import {
     showFailMessage,
     showSuccessMessage,
 } from '@/utils/show-message/showSFmessage';
+import { showFailToast } from 'vant';
+import { getApplyData } from '@/api/dingding/dingding.js';
+// import { toRaw } from 'vue';
+import { taskApplyIdCombineDingInstanceId } from '@/api/dingding/combine';
+import { ElMessage } from 'element-plus';
 /********************************\
  * 表单数据定义
 \********************************/
@@ -74,6 +79,7 @@ function resetForm() {
 
     // 清除禁止点击事件
     isSubmitting.value = false;
+    creating.value = false;
 }
 
 /********************************\
@@ -81,70 +87,125 @@ function resetForm() {
 \********************************/
 const dialogFormVisible = ref(false);
 const formLabelWidth = '120px';
-const projectList = ref([]);
-const taskTypeList = ref([]);
-const auditUserList = ref([]);
-const planFinishHourList = ref([]);
 
 async function dialogFormVisibleFun() {
     // 打开对话框
     dialogFormVisible.value = true;
 
     // 调用用户权限项目接口
-    let response = await getUserProjectList();
-    if (!handleResponse(response)) return;
-    projectList.value = response.result;
-    // console.log('projectList ===', projectList);
-
-    // 调用获取权限任务类型接口
-    response = await getTaskTypeList();
-    if (!handleResponse(response)) return;
-    taskTypeList.value = response.result;
-    // console.log('taskTypeList ===', taskTypeList);
-
-    // 调用权限审批人接口
-    response = await getAuditUserList();
-    if (!handleResponse(response)) return;
-    auditUserList.value = response.result;
-    // console.log('auditUserList ===', auditUserList);
-
-    response = await getPlanFinishList();
-    if (!handleResponse(response)) return;
-    planFinishHourList.value = response.result;
-    // console.log('planFinishHourList ===', planFinishHourList);
+    await getUserProjectList();
+    // 调用获取任务类型接口
+    await getTaskTypeList();
+    // 调用审批人接口
+    await getAuditUserList();
+    // 计划完成时间选择
+    await getPlanFinishList();
 }
-
+/********************************\
+ * 获取用户有权限的项目
+\********************************/
+const projectList = ref([]);
+const projectNameMap = ref({}); // 记录映射关系
 async function getUserProjectList() {
-    return await userProjectList.fetchUserProjectListAction(userIdStore.userId);
+    const response = await userProjectList.fetchUserProjectListAction(
+        userIdStore.userId,
+    );
+    // console.log('项目idresponse ===', response);
+    try {
+        if (response && response.code === 200) {
+            projectList.value = response.result;
+            // 根据 projectList 创建 projectNameMap
+            projectNameMap.value = response.result.reduce((map, project) => {
+                map[project.id] = project.name;
+                return map;
+            }, {});
+        }
+    } catch (error) {
+        console.log('error');
+    }
 }
 
+/********************************\
+ * 获取任务类别ID
+\********************************/
+const taskTypeList = ref([]);
+const taskTypeMap = ref({});
 async function getTaskTypeList() {
-    return await useTaskTypeList.fetchTaskTypeListAction();
+    const response = await useTaskTypeList.fetchTaskTypeListAction();
+    // console.log('任务类型response ===', response);
+    try {
+        if (response && response.code === 200) {
+            taskTypeList.value = response.result;
+            // 根据 taskTypeList 创建 taskTypeMap
+            taskTypeMap.value = response.result.reduce((map, taskType) => {
+                map[taskType.id] = taskType.name;
+                return map;
+            }, {});
+        }
+    } catch (error) {
+        console.log('error');
+    }
 }
 
+/********************************\
+ * 获取审批人ID
+\********************************/
+const auditUserList = ref([]);
+const auditUserMap = ref({});
+const auditUserNameCNMap = ref({});
 async function getAuditUserList() {
-    return await useAuditTypeList.fetchAuditUserListAction();
+    const response = await useAuditTypeList.fetchAuditUserListAction();
+    // console.log('审批人response ===', response);
+    try {
+        if (response && response.code === 200) {
+            auditUserList.value = response.result;
+            // 根据 auditUserList 创建 auditUserMap
+            auditUserMap.value = response.result.reduce((map, auditUser) => {
+                map[auditUser.id] = auditUser.nameEN;
+                return map;
+            }, {});
+            // 中文名
+            auditUserNameCNMap.value = response.result.reduce(
+                (map, auditUser) => {
+                    map[auditUser.id] = auditUser.nameCN;
+                    return map;
+                },
+                {},
+            );
+        }
+    } catch (error) {
+        console.log('error');
+    }
 }
 
-// 获取选择的计划完成时间
+/********************************\
+ * 获取计划完成小时数
+\********************************/
+const planFinishHourList = ref([]);
+const planFinishHourListMap = ref({});
 async function getPlanFinishList() {
-    return await usePlanFinishHourList.fetchPlanFinishHourAction();
-}
-
-function handleResponse(response) {
-    if (response && response.code === 200) {
-        return true;
-    } else {
-        // console.log('response ===', response);
-        showFailMessage(response.message);
-        return false;
+    const response = await usePlanFinishHourList.fetchPlanFinishHourAction();
+    // console.log('计划完成小时数response ===', response);
+    try {
+        if (response && response.code === 200) {
+            planFinishHourList.value = response.result;
+            planFinishHourListMap.value = response.result.reduce(
+                (map, planFinishHour) => {
+                    map[planFinishHour.id] = planFinishHour.taskPoints;
+                    return map;
+                },
+                {},
+            );
+        }
+    } catch (error) {
+        console.log('error');
     }
 }
 /********************************\
  * 创建提交
 \********************************/
+const creating = ref(false);
 async function createTaskBtn() {
-    // console.log('form ===', form);
     // 项目id
     if (!form.projectId) {
         showFailMessage('请选择项目名称。');
@@ -162,38 +223,10 @@ async function createTaskBtn() {
     }
 
     // validateHoursInput 验证计划完成小时数(20231101改为下拉框),只需要验证是否为空
-    if (!form.planFinishHour) {
+    if (form.planFinishHour == undefined || form.planFinishHour == null) {
         showFailMessage('请选择计划完成小时数。');
         return;
     }
-
-    // const validateHoursInputResult = validateHoursInput(form.planFinishHour);
-    // if (!validateHoursInputResult.isValid) {
-    //     if (isMobileDevice) {
-    //         showFailToast(validateHoursInputResult.message);
-    //     } else {
-    //         ElMessage({
-    //             message: validateHoursInputResult.message,
-    //             type: 'error',
-    //         });
-    //     }
-
-    //     return;
-    // }
-
-    // 20231030改为可选，校验和时间同步
-    // 完成日期
-    // if (!form.planFinishDate) {
-    //     if (isMobileDevice) {
-    //         showFailToast('请选择计划完成日期');
-    //     } else {
-    //         ElMessage({
-    //             message: '请选择计划完成日期',
-    //             type: 'error',
-    //         });
-    //     }
-    //     return;
-    // }
 
     // 日期时间校验
     const validateDdteInputResult = validateDateInput(
@@ -225,39 +258,122 @@ async function createTaskBtn() {
         return;
     }
 
+    const applyName = localStorage.getItem('username');
     // 发送请求之后禁止操作表单
     isSubmitting.value = true;
+    // 发送请求禁止再次点击发送
+    creating.value = true;
+    // 钉钉的表单
+    let dingdingForm = {
+        applyId: null,
+        applyName: applyName,
+        projectName: projectNameMap.value[form.projectId],
+        taskTypeName: taskTypeMap.value[form.taskTypeId],
+        applyAuditName: auditUserNameCNMap.value[form.applyAuditId],
+        planFinishHour: form.planFinishHour,
+        planFinishDate: form.planFinishDate,
+        taskDescription: form.taskDescription,
+    };
+    // console.log('dingdingForm ===', dingdingForm);
 
-    const response = await createTask.fetchCreateTaskAction(form);
+    try {
+        const response = await createTask.fetchCreateTaskAction(form);
+        if (response && response.code === 200) {
+            // 返回得到taskApplyId
+            // console.log('taskApplyId ===', response.result.taskApplyId);
+            // 钉钉调用数据
+            let taskApplyId = response.result.taskApplyId;
 
-    if (response && response.code === 200) {
-        // 数据共享
-        isCreateStore.setIsCreated(true);
-        // 提示新建完成
+            let instanceIds = null;
+            dingdingForm.applyId = taskApplyId;
+            // 等待钉钉创建任务申请实例
+            await getApplyData(dingdingForm)
+                .then((instance) => {
+                    instanceIds = instance.instanceId;
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                });
 
-        showSuccessMessage('任务申请新增成功。');
-        // 清除所有数据
-        resetForm();
-        // 清除移动端数据
-        resetVantForm();
-        // 打开可编辑
-        isSubmitting.value = false;
-        // 关闭对话框
-        dialogFormVisible.value = false;
-        // 关闭移动端弹出框
-        showMobileCreateDialog.value = false;
-    } else {
+            // 创建成功之后，得到后端返回的taskid,再得到钉钉返回的instanceid
+            // console.log(
+            //     'taskApplyId,instanceIds ===',
+            //     taskApplyId,
+            //     instanceIds,
+            // );
+            // 等待任务申请系统创建成功
+            // 等待钉钉创建成功
+            // 将他们连接，方便后续的查询同步
+            await combinedFun(taskApplyId, instanceIds);
+
+            if (instanceIds) {
+                showSuccessMessage('任务申请新增成功，钉钉同步任务申请成功。');
+            } else {
+                // todo 20231207 移动端提示处理
+                if (isMobileDevice) {
+                    showFailToast({
+                        icon: 'warning-o',
+                        messasge: '任务申请新增成功，但钉钉同步任务申请失败。',
+                    });
+                } else {
+                    ElMessage({
+                        message: '任务申请新增成功，但钉钉同步任务申请失败。',
+                        type: 'warning',
+                    });
+                }
+            }
+            // 数据共享
+            isCreateStore.setIsCreated(true);
+            // 提示新建完成
+            // showSuccessMessage('任务申请新增成功，钉钉同步成功。');
+            // 清除所有数据
+            resetForm();
+            // 清除移动端数据
+            resetVantForm();
+            // 打开可编辑
+            isSubmitting.value = false;
+            creating.value = false;
+            // 关闭对话框
+            dialogFormVisible.value = false;
+            // 关闭移动端弹出框
+            showMobileCreateDialog.value = false;
+        } else {
+            // 可以添加其他的错误处理逻辑
+            showFailMessage(`任务申请新增失败，${response.message}`);
+            // 设置打开可编辑
+            isSubmitting.value = false;
+            creating.value = false;
+            // 不用关闭对话框
+        }
+    } catch (error) {
         // 可以添加其他的错误处理逻辑
-        showFailMessage(`任务申请新增失败，${response.message}`);
+        showFailMessage(`任务申请新增失败，${error}`);
         // 设置打开可编辑
         isSubmitting.value = false;
+        creating.value = false;
+        // 关闭对话框
+        dialogFormVisible.value = false;
     }
 }
+
+// combined
+// const instanceId = ref();
+// const taskApplyId = ref();
+const combinedFun = async (taskApplyId, instanceId) => {
+    // 将得到的taskApplyId和dingInstanceId结合
+    // 参数一：taskApplyId 参数二：dingInstanceId
+
+    try {
+        await taskApplyIdCombineDingInstanceId(taskApplyId, instanceId);
+    } catch (error) {
+        console.log(error);
+    }
+};
 
 /********************************\
  * 防抖处理
 \********************************/
-const debounceCreateTaskBtn = debounce(createTaskBtn, 600);
+const debounceCreateTaskBtn = debounce(createTaskBtn, 1200);
 /********************************\
  * 完整显示1000字符
 \********************************/
@@ -404,6 +520,7 @@ const filter = (type, options) => {
 // 点击确认没成功也会取消弹出框问题
 const handleCreateBeforeClose = async (action) => {
     if (action === 'confirm') {
+        // 禁止移动端多次点击新增按钮
         await debounceCreateTaskBtn();
         // debounceCreateTaskBtn内部控制弹出框显示或隐藏
     } else {
@@ -602,6 +719,7 @@ const clearDate = () => {
                         type="primary"
                         @click="debounceCreateTaskBtn"
                         class="btn-sure"
+                        :disabled="creating"
                     >
                         确认
                     </el-button>

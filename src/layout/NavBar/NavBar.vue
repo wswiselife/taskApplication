@@ -39,17 +39,16 @@ import { clearCacheFun } from '@/utils/clear-cache/clearCache';
 async function logoutbtn() {
     // 清除本地缓存
     clearCacheFun();
-
-    ElMessage({
-        message: '已正常退出。',
-        type: 'success',
-    });
-
     router.push({ path: '/login' });
 
     // 禁止浏览器的后退功能
     window.addEventListener('popstate', function () {
         history.go(1);
+    });
+
+    ElMessage({
+        message: '已正常退出。',
+        type: 'success',
     });
 }
 
